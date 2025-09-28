@@ -84,7 +84,8 @@
     let currentYear = 2020;
     let cash = 10000;
     let savings = 0;
-    let cds = []; // {amount, rate, yearsLeft, maturityYear}
+    // Each CD: {amount, rate, yearsLeft, maturityYear}
+    let cds = [];
 
     // CD rates by year
     const cdRates = {
@@ -95,14 +96,29 @@
       2024: {1: 0.036}
     };
 
+    // ======= Precision helpers (round everything to cents) =======
+    const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+    const clean  = (n) => {
+      const x = round2(n);
+      return Math.abs(x) < 0.005 ? 0 : x; // avoid -0.00
+    };
+
+    function normalizeState() {
+      cash    = clean(cash);
+      savings = clean(savings);
+      cds = cds.map(cd => ({ ...cd, amount: clean(cd.amount) }));
+    }
+
     // ======= Persistence =======
     function loadData() {
       cash = parseFloat(localStorage.getItem("balance")) || 10000;
       savings = parseFloat(localStorage.getItem("savings")) || 0;
       currentYear = parseInt(localStorage.getItem("year")) || 2020;
       cds = JSON.parse(localStorage.getItem("cds") || "[]");
+      normalizeState();
     }
     function saveData() {
+      normalizeState();
       localStorage.setItem("balance", cash);
       localStorage.setItem("savings", savings);
       localStorage.setItem("year", currentYear);
@@ -111,30 +127,31 @@
 
     // ======= UI =======
     function formatMoney(val) {
-      return (val ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return (clean(val)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
       document.getElementById("cash").textContent = formatMoney(cash);
       document.getElementById("savings").textContent = formatMoney(savings);
 
-      // Render CD buttons
+      // Render CD buttons for the current year
       const cdOpts = cdRates[currentYear] || {};
       const cdOptionsDiv = document.getElementById("cdOptions");
       cdOptionsDiv.innerHTML = "";
-      for (const [term, rate] of Object.entries(cdOpts)) {
+      Object.entries(cdOpts).forEach(([term, rate]) => {
         const btn = document.createElement("button");
         btn.className = "btn btn-success";
         btn.textContent = `${term} Yr @ ${(rate*100).toFixed(1)}%`;
-        btn.onclick = () => investCD(term, rate);
+        btn.onclick = () => investCD(parseInt(term, 10), rate);
         cdOptionsDiv.appendChild(btn);
-      }
+      });
 
       // CD summary
+      const cdSummaryEl = document.getElementById("cdSummary");
       if (cds.length === 0) {
-        document.getElementById("cdSummary").textContent = "No active CDs";
+        cdSummaryEl.textContent = "No active CDs";
       } else {
-        document.getElementById("cdSummary").innerHTML = cds.map(cd =>
+        cdSummaryEl.innerHTML = cds.map(cd =>
           `Current Balance: $${formatMoney(cd.amount)} | Mature Year: ${cd.maturityYear}`
         ).join("<br>");
       }
@@ -152,26 +169,28 @@
 
     // ======= Actions =======
     function saveMoney() {
-      const amount = parseFloat(document.getElementById("saveAmount").value);
+      let amount = parseFloat(document.getElementById("saveAmount").value);
       if (isNaN(amount) || amount <= 0) return;
+      amount = clean(amount);
       if (amount > cash) { alert("Not enough cash!"); return; }
-      cash -= amount;
-      savings += amount;
+      cash    = clean(cash - amount);
+      savings = clean(savings + amount);
       saveData();
       document.getElementById("saveAmount").value = "";
       updateUI();
     }
 
     function investCD(term, rate) {
-      const amount = parseFloat(document.getElementById("cdAmount").value);
+      let amount = parseFloat(document.getElementById("cdAmount").value);
       if (isNaN(amount) || amount <= 0) return;
+      amount = clean(amount);
       if (amount > cash) { alert("Not enough cash!"); return; }
-      cash -= amount;
-      cds.push({ 
-        amount, 
-        rate, 
-        yearsLeft: parseInt(term), 
-        maturityYear: currentYear + parseInt(term) 
+      cash = clean(cash - amount);
+      cds.push({
+        amount: amount,
+        rate: rate,
+        yearsLeft: parseInt(term, 10),
+        maturityYear: currentYear + parseInt(term, 10)
       });
       saveData();
       document.getElementById("cdAmount").value = "";
@@ -182,15 +201,15 @@
       if (currentYear >= 2025) return;
       currentYear++;
 
-      // Savings interest
-      savings *= (1 + savingsRate);
+      // Savings interest (round to cents)
+      savings = clean(savings * (1 + savingsRate));
 
-      // Handle CDs (compound annually)
+      // CDs compound annually, then reduce term; matured CDs pay out to cash
       cds.forEach(cd => {
-        cd.amount *= (1 + cd.rate); // compound interest yearly
+        cd.amount = clean(cd.amount * (1 + cd.rate));
         cd.yearsLeft -= 1;
         if (cd.yearsLeft === 0) {
-          cash += cd.amount; // matured CD returns to cash
+          cash = clean(cash + cd.amount);
         }
       });
       cds = cds.filter(cd => cd.yearsLeft > 0);
