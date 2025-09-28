@@ -1,159 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Financial Simulator - Buy Page</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FinanceSim – Investment Hub</title>
+  <link rel="stylesheet" href="homestyle.css" />
 </head>
-
-<body class="bg-gray-100 min-h-screen flex flex-col">
-
-  <!-- Navbar -->
-  <nav class="bg-blue-600 text-white p-4 flex justify-between">
-    <div class="font-bold text-xl">FinanceSim</div>
-    <div class="space-x-4">
-      <a href="buyPage.html" class="hover:underline">Investment Hub</a>
-      <a href="sell.html" class="hover:underline">Sell Assets</a>
+<body>
+  <nav class="nav">
+    <div class="brand">FinanceSim</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="buyPage.html">Investment Hub</a>
+      <a href="sell.html">Sell Assets</a>
     </div>
   </nav>
 
-  <!-- Main content -->
-  <main class="flex-1 p-6 space-y-6">
-    <h1 class="text-2xl font-bold">Investment Hub</h1>
-
-    <div class="space-y-2">
-      <p><strong>Year:</strong> <span id="year">2020</span></p>
-      <p><strong>Total Cash:</strong> $<span id="cash">10000</span></p>
-      <p><strong>Savings Account Balance:</strong> $<span id="savings">0</span></p>
+  <div class="container">
+    <!-- Top summary bar: Year + Cash -->
+    <div class="summary">
+      <div class="item">Year: <span id="year" class="val">2020</span></div>
+      <div class="item">Cash: $<span id="cash" class="val">10,000.00</span></div>
     </div>
 
-    <!-- Savings Button -->
-    <div>
-      <button onclick="toggleSavingsForm()" class="bg-green-600 text-white px-4 py-2 rounded">
-        Savings Account
-      </button>
+    <h1>Choose Assets to Buy</h1>
+    <div class="panel">
+      <h3 style="margin-top:0;">Available Assets</h3>
 
-      <!-- Hidden savings form -->
-      <div id="savingsForm" class="hidden mt-3 space-y-2">
-        <label for="saveAmount" class="block font-semibold">Enter amount to save into a savings account (Interest Rate:
-          0.004):</label>
-        <input id="saveAmount" type="number" class="border p-2 rounded w-40" placeholder="1000" />
-        <button onclick="saveMoney()" class="bg-green-700 text-white px-4 py-2 rounded">Confirm Save</button>
+      <!-- Asset: Savings Account -->
+      <div class="panel" style="margin-top:8px;">
+        <div class="row" style="justify-content:space-between; align-items: baseline;">
+          <div>
+            <strong>Savings Account</strong>
+            <div class="muted">Interest: 0.4% (0.004)</div>
+          </div>
+          <div>
+            Balance: $<span id="savings" class="val">0.00</span>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:10px;">
+          <div class="field">
+            <label for="saveAmount"><strong>Deposit amount</strong></label>
+            <input id="saveAmount" type="number" class="input" placeholder="1000" />
+          </div>
+          <div class="row">
+            <button class="btn btn-success" onclick="saveMoney()">Deposit</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:space-between; margin-top:12px;">
+        <button class="btn btn-secondary" onclick="window.location.href='index.html'">Back</button>
+        <button id="next-year-btn" class="btn btn-primary" onclick="nextYear()">Next Year</button>
       </div>
     </div>
-
-    <!-- Next Year -->
-    <div id="button-container">
-      <button id="next-year-btn" onclick="nextYear()" class="bg-blue-600 text-white px-4 py-2 rounded">
-        Next Year
-      </button>
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-gray-200 text-center p-4">
-    © 2025 FinanceSim
-  </footer>
+  </div>
 
   <script>
-    // Game State
+    // ======= State & persistence =======
+    const interestRate = 0.004; // 0.4% per year
     let currentYear = 2020;
     let cash = 10000;
     let savings = 0;
-    const interestRate = 0.004;
 
-    // Helper function (same as in sellPage)
     function formatMoney(val) {
-      return val.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+      return (val ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-
-    // Load from localStorage or set defaults
     function loadData() {
-      let storedCash = localStorage.getItem("balance");
-      let storedSavings = localStorage.getItem("savings");
-      let storedYear = localStorage.getItem("year");
+      const storedCash = localStorage.getItem("balance");
+      const storedSavings = localStorage.getItem("savings");
+      const storedYear = localStorage.getItem("year");
       cash = storedCash ? parseFloat(storedCash) : 10000;
       savings = storedSavings ? parseFloat(storedSavings) : 0;
       currentYear = storedYear ? parseInt(storedYear) : 2020;
     }
-
-    // Save to localStorage
     function saveData() {
       localStorage.setItem("balance", cash);
       localStorage.setItem("savings", savings);
       localStorage.setItem("year", currentYear);
     }
 
-    // Update UI and swap button if needed
+    // ======= UI =======
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
       document.getElementById("cash").textContent = formatMoney(cash);
       document.getElementById("savings").textContent = formatMoney(savings);
 
-      const buttonContainer = document.getElementById("button-container");
-
+      const nextBtn = document.getElementById("next-year-btn");
       if (currentYear >= 2025) {
-        // Replace Next Year button with Review Final Assets (same style)
-        buttonContainer.innerHTML = `
-        <button onclick="window.location.href='sell.html'" 
-                class="bg-blue-600 text-white px-4 py-2 rounded">
-          Review Final Assets
-        </button>
-      `;
+        nextBtn.textContent = "Review Final Assets";
+        nextBtn.onclick = () => window.location.href = 'sell.html';
       } else {
-        // Ensure Next Year button exists (recreate if necessary)
-        buttonContainer.innerHTML = `
-        <button id="next-year-btn" onclick="nextYear()" class="bg-blue-600 text-white px-4 py-2 rounded">
-          Next Year
-        </button>
-      `;
+        nextBtn.textContent = "Next Year";
+        nextBtn.onclick = nextYear;
       }
     }
 
-    function toggleSavingsForm() {
-      const form = document.getElementById("savingsForm");
-      form.classList.toggle("hidden");
-    }
-
+    // ======= Actions =======
     function saveMoney() {
-      let amount = parseFloat(document.getElementById("saveAmount").value);
+      const amount = parseFloat(document.getElementById("saveAmount").value);
       if (isNaN(amount) || amount <= 0) return;
-
-      if (amount > cash) {
-        alert("Not enough cash!");
-        return;
-      }
+      if (amount > cash) { alert("Not enough cash!"); return; }
       cash -= amount;
       savings += amount;
       saveData();
-
-      // Reset form
       document.getElementById("saveAmount").value = "";
-      document.getElementById("savingsForm").classList.add("hidden");
-
       updateUI();
     }
 
-    // Called when user clicks Next Year (or the recreated Next Year button)
     function nextYear() {
-      if (currentYear >= 2025) return; // safety
+      if (currentYear >= 2025) return;
       currentYear++;
       // apply interest to savings
       savings += savings * interestRate;
-
       saveData();
       updateUI();
     }
 
-    // On page load, sync with localStorage and render UI correctly
-    loadData();
-    updateUI();
+    // init
+    loadData(); updateUI();
   </script>
-  
 </body>
 </html>

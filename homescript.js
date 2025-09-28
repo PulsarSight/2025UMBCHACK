@@ -1,25 +1,18 @@
+// Navigate to the buy page
 function playGame() {
-  localStorage.removeItem('balance');
-  localStorage.removeItem('savings');
-  localStorage.removeItem('year');
-  window.location.href = "buyPage.html"; // replace with teammate’s filename
+  window.location.href = "buyPage.html";
 }
 
-function showInstructions() {
-  alert("Instructions: Here's how you play...");
-}
-
+// Collapsible sections (Mission & Instructions) use the same animation
 function toggleMission() {
-  const mission = document.getElementById("mission");
-  mission.classList.toggle("show");
+  const el = document.getElementById("mission");
+  if (el) el.classList.toggle("show");
+}
+function toggleInstructions() {
+  const el = document.getElementById("instructions");
+  if (el) el.classList.toggle("show");
 }
 
-function openInstructions() {
-  const popup = document.getElementById("instructionsPopup");
-  popup.classList.add("show");
-}
-
-function closeInstructions() {
-  const popup = document.getElementById("instructionsPopup");
-  popup.classList.remove("show");
-}
+// Backwards-compat shims (if old handlers are still referenced)
+function openInstructions(){ toggleInstructions(); }
+function closeInstructions(){ toggleInstructions(); }

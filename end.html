@@ -3,101 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Congrats!</title>
+  <title>FinanceSim – Results</title>
   <link rel="stylesheet" href="homestyle.css">
-  <style>
-    .results span {
-      display: inline-block;
-      min-width: 100px;
-    }
-    .profit-positive {
-      color: green;
-      font-weight: bold;
-    }
-    .profit-negative {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
 </head>
-<body>
+<body class="center">
+  <nav class="nav">
+    <div class="brand">FinanceSim</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="buyPage.html">Investment Hub</a>
+      <a href="sell.html">Sell Assets</a>
+    </div>
+  </nav>
 
-  <h1>Congrats!</h1>
+  <div class="container center">
+    <h1>Congrats!</h1>
+    <div class="results">
+      <p><strong>Final Growth:</strong> $<span id="finalGrowth">0</span></p>
+      <p><strong>Total Profit:</strong> $<span id="totalProfit">0</span></p>
+      <p><strong>Applied Total Inflation:</strong> $<span id="adjustedGrowth">0</span></p>
+    </div>
 
-  <div class="results">
-    <p><strong>Final Growth:</strong> $<span id="finalGrowth">0</span></p>
-    <p><strong>Total Profit:</strong> $<span id="totalProfit">0</span></p>
-    <p><strong>Applied Total Inflation:</strong> $<span id="adjustedGrowth">0</span></p>
-  </div>
-
-  <div class="button-container">
-    <button onclick="playGame()">Play Again</button>
-    <a href="index.html"><button>Home</button></a>
+    <div class="row" style="justify-content:center; margin-top:16px;">
+      <button class="btn btn-primary" onclick="playGame()">Play Again</button>
+      <a class="btn btn-secondary" href="index.html">Home</a>
+    </div>
   </div>
 
   <script>
-    // Money formatter
-    function formatMoney(val) {
-      return val.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+    // Same calc logic as your original, with a small formatter.
+    function formatMoney(val) { return val.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
+    function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+    function countUpEased(id, start, end, duration, cb){
+      const el = document.getElementById(id); const t0 = performance.now();
+      function tick(t){
+        const p = Math.min((t - t0)/duration, 1); const v = start + (end - start) * easeOutCubic(p);
+        el.textContent = formatMoney(v); if(p<1) requestAnimationFrame(tick); else cb && cb();
+      } requestAnimationFrame(tick);
     }
-
-    // Easing function (ease out cubic)
-    function easeOutCubic(t) {
-      return 1 - Math.pow(1 - t, 3);
-    }
-
-    // Count-up with easing & formatting
-    function countUpEased(elementId, start, end, duration, callback) {
-      const element = document.getElementById(elementId);
-      const startTime = performance.now();
-
-      function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        let t = Math.min(elapsed / duration, 1);
-        t = easeOutCubic(t);
-        const value = start + (end - start) * t;
-        element.textContent = formatMoney(value);
-        if (elapsed < duration) {
-          requestAnimationFrame(update);
-        } else if (callback) {
-          callback();
-        }
-      }
-
-      requestAnimationFrame(update);
-    }
-
-    window.onload = function () {
-      // Get data from localStorage
+    window.onload = function(){
       const cash = parseFloat(localStorage.getItem("balance")) || 0;
       const savings = parseFloat(localStorage.getItem("savings")) || 0;
       const finalGrowth = cash + savings;
-
-      // Profit = Final Growth - 10000 (initial investment)
       const profit = finalGrowth - 10000;
-
-      // Inflation-adjusted value: Final Growth / (1.03^5)
       const inflationAdjusted = finalGrowth / Math.pow(1.03, 5);
 
-      // Animate in sequence: Final Growth → Profit → Inflation
-      countUpEased('finalGrowth', 0, finalGrowth, 1000, () => {
-        countUpEased('totalProfit', 0, profit, 1000, () => {
-          countUpEased('adjustedGrowth', 0, inflationAdjusted, 1000);
+      countUpEased('finalGrowth', 0, finalGrowth, 900, () => {
+        countUpEased('totalProfit', 0, profit, 900, () => {
+          countUpEased('adjustedGrowth', 0, inflationAdjusted, 900);
         });
       });
 
-      // Apply color for Total Profit
-      const profitElement = document.getElementById('totalProfit');
-      if (profit >= 0) {
-        profitElement.classList.add('profit-positive');
-      } else {
-        profitElement.classList.add('profit-negative');
-      }
+      const profitEl = document.getElementById('totalProfit');
+      if (profit >= 0) profitEl.classList.add('profit-positive'); else profitEl.classList.add('profit-negative');
     };
-  </script>
 
+    // Needed by "Play Again" button
+    function playGame() {
+      localStorage.removeItem('balance');
+      localStorage.removeItem('savings');
+      localStorage.removeItem('year');
+      window.location.href = "buyPage.html";
+    }
+  </script>
 </body>
 </html>

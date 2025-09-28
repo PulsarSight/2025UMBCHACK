@@ -3,40 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Homepage</title>
+  <title>FinanceSim – Home</title>
   <link rel="stylesheet" href="homestyle.css" />
-  
 </head>
 <body>
-  <h1>Welcome to My Website</h1>
+  <nav class="nav">
+    <div class="brand">FinanceSim</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="buyPage.html">Investment Hub</a>
+      <a href="sell.html">Sell Assets</a>
+    </div>
+  </nav>
 
-  <div class="button-container">
-    <button onclick="playGame()">Play</button>
-    <button onclick="openInstructions()">Instructions</button>
-    <button onclick="toggleMission()">Mission Statement</button>
-  </div>
+  <div class="container center">
+    <h1>Welcome to FinanceSim</h1>
+    <div class="row center" style="justify-content:center; margin-top:12px;">
+      <button class="btn btn-primary" onclick="playGame()">Play</button>
+      <button class="btn btn-secondary" onclick="toggleInstructions()">Instructions</button>
+      <button class="btn btn-secondary" onclick="toggleMission()">Mission Statement</button>
+    </div>
 
-  <!-- Hidden mission section -->
-  <div id="mission">
-    <h2>Understand Investments. Protect Your Future.</h2>
-    <p>
-      Our mission is to empower individuals to make informed personal finance decisions 
-      by providing clear, accessible insights into common investment options such as stocks, 
-      mutual funds, savings accounts, certificates of deposit, and the S&P 500. 
-      We aim to help people not only understand how their money can grow through these investments 
-      but also recognize the impact of inflation on long-term purchasing power, 
-      so they can make smarter, more confident choices for their financial future.
-    </p>
-  </div>
+    <!-- Collapsible Mission -->
+    <div id="mission">
+      <h2>Understand Investments. Protect Your Future.</h2>
+      <p>
+        Our mission is to empower individuals to make informed personal finance decisions
+        by providing clear, accessible insights into common investment options such as stocks,
+        mutual funds, savings accounts, certificates of deposit, and the S&amp;P 500. We also highlight
+        inflation’s impact, so you can make confident, long-term choices.
+      </p>
+    </div>
 
-  <div id="instructionsPopup" class="popup hidden">
-    <div class="popup-content">
-      <span class="close" onclick="closeInstructions()">&times;</span>
+    <!-- Collapsible Instructions (same animation + style as Mission) -->
+    <div id="instructions">
       <h2>Instructions</h2>
       <p>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-        volutpat nunc sit amet purus porta, nec fermentum lectus dapibus.
-        Curabitur blandit justo nec nulla pharetra, sed commodo erat varius.
+        You start with <strong>$10,000</strong>. Each year you can move money into different accounts
+        (e.g., Savings). Click <em>Next Year</em> to advance the simulation up to 5 years. Your
+        <strong>Buy</strong> page lists available investment types. Your <strong>Sell</strong> page shows current
+        holdings so you can withdraw/sell. Year and Cash are always shown in the top bar.
       </p>
     </div>
   </div>
