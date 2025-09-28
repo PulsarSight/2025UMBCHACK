@@ -1,5 +1,5 @@
 function playGame() {
-  alert("Play button clicked! (This could start your game)");
+  window.location.href = "buyPage.html"; // replace with teammate’s filename
 }
 
 function showInstructions() {
@@ -9,10 +9,6 @@ function showInstructions() {
 function toggleMission() {
   const mission = document.getElementById("mission");
   mission.classList.toggle("hidden");
-}
-
-function playGame() {
-  alert("Play button clicked! (This could start your game)");
 }
 
 function openInstructions() {
