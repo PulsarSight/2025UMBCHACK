@@ -12,7 +12,6 @@
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="buyPage.html">Investment Hub</a>
-      <a href="sell.html">Sell Assets</a>
     </div>
   </nav>
 
@@ -49,8 +48,8 @@
       </table>
 
       <div class="row" style="justify-content:space-between; margin-top:12px;">
-        <button class="btn btn-secondary" onclick="window.location.href='buyPage.html'">Back to Investment Hub</button>
-        <div id="finalize-container"></div>
+        <button class="btn btn-secondary" onclick="window.location.href='buyPage.html'">Investment Hub</button>
+        <button id="next-or-finalize-btn" class="btn btn-primary">Next Year</button>
       </div>
     </div>
   </div>
@@ -83,9 +82,10 @@
     const savingsQty = document.getElementById('savings-qty');
     const errorMsg = document.getElementById('withdraw-error');
     const yearSpan = document.getElementById('current-year');
-    const finalizeContainer = document.getElementById('finalize-container');
+    const nextOrFinalizeBtn = document.getElementById('next-or-finalize-btn');
 
     // State
+    const interestRate = 0.004; // keep behavior consistent with Buy page
     let cash = 0.00;
     let savings = 0.00;
     let year = 2020;
@@ -103,13 +103,35 @@
       savingsQty.textContent = "$" + formatMoney(savings);
       yearSpan.textContent = year;
 
-      updateFinalizeButton();
+      updateNextOrFinalize();
     }
     function saveData() {
       localStorage.setItem("balance", cash);
       localStorage.setItem("savings", savings);
       localStorage.setItem("year", year);
-      loadData();
+    }
+
+    // Next Year / Finalize control
+    function updateNextOrFinalize() {
+      if (year >= 2025) {
+        nextOrFinalizeBtn.textContent = "Calculate Total Assets";
+        nextOrFinalizeBtn.onclick = () => {
+          const totalAssets = Number((cash + savings).toFixed(2));
+          localStorage.setItem('finalGrowth', totalAssets);
+          window.location.href = 'end.html';
+        };
+      } else {
+        nextOrFinalizeBtn.textContent = "Next Year";
+        nextOrFinalizeBtn.onclick = nextYear;
+      }
+    }
+    function nextYear() {
+      if (year >= 2025) return;
+      year++;
+      // Apply same interest rule as Buy page (so advancing here or there is consistent)
+      savings += savings * interestRate;
+      saveData();
+      loadData(); // refresh labels + button
     }
 
     // Modal controls
@@ -133,23 +155,10 @@
       if (amt > savings) { errorMsg.textContent = 'Cannot withdraw more than savings.'; errorMsg.style.display = 'block'; return; }
 
       savings -= amt; cash += amt;
-      saveData(); // will refresh UI via loadData()
+      saveData();
       hideModal();
+      loadData(); // refresh UI
     };
-
-    function updateFinalizeButton() {
-      if (year >= 2025) {
-        finalizeContainer.innerHTML = `<button id="finalize-btn" class="btn btn-primary">Calculate Total Assets</button>`;
-        document.getElementById('finalize-btn').onclick = finalizeAndGo;
-      } else {
-        finalizeContainer.innerHTML = `<button class="btn btn-primary" onclick="window.location.href='buyPage.html'">Back to Investment Hub</button>`;
-      }
-    }
-    function finalizeAndGo() {
-      const totalAssets = Number((cash + savings).toFixed(2));
-      localStorage.setItem('finalGrowth', totalAssets);
-      window.location.href = 'end.html';
-    }
 
     // init
     loadData();
