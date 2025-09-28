@@ -1,19 +1,46 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Website</title>
-  <link rel="stylesheet" href="style.css" /> <!-- optional: for styling -->
+  <title>My Homepage</title>
+  <link rel="stylesheet" href="homestyle.css" />
+  
 </head>
-
 <body>
-  <h1>Hello, world!</h1>
-  <p>Welcome to my first website.</p>
+  <h1>Welcome to My Website</h1>
 
-  <script src="script.js"></script> <!-- optional: for JavaScript -->
+  <div class="button-container">
+    <button onclick="playGame()">Play</button>
+    <button onclick="openInstructions()">Instructions</button>
+    <button onclick="toggleMission()">Mission Statement</button>
+  </div>
+
+  <!-- Hidden mission section -->
+  <div id="mission" class="hidden">
+    <h2>Understand Investments. Protect Your Future.</h2>
+    <p>
+      Our mission is to empower individuals to make informed personal finance decisions 
+      by providing clear, accessible insights into common investment options such as stocks, 
+      mutual funds, savings accounts, certificates of deposit, and the S&P 500. 
+      We aim to help people not only understand how their money can grow through these investments 
+      but also recognize the impact of inflation on long-term purchasing power, 
+      so they can make smarter, more confident choices for their financial future.
+    </p>
+  </div>
+
+  <div id="instructionsPopup" class="popup hidden">
+    <div class="popup-content">
+      <span class="close" onclick="closeInstructions()">&times;</span>
+      <h2>Instructions</h2>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
+        volutpat nunc sit amet purus porta, nec fermentum lectus dapibus.
+        Curabitur blandit justo nec nulla pharetra, sed commodo erat varius.
+      </p>
+    </div>
+  </div>
+
+  <script src="homescript.js"></script>
 </body>
-
 </html>
