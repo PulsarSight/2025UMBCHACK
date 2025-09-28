@@ -14,9 +14,9 @@
         .sell-btn:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
-<body>
+<body onload="loadData()">
     <div style="position: absolute; top: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
-        Cash: $<span id="cash-amount">1,000.00</span>
+        Cash: $<span id="cash-amount">0.00</span>
     </div>
     <div class="container">
         <h1>Your Investments</h1>
@@ -35,8 +35,8 @@
                 <tr>
                     <td>Savings Account</td>
                     <td>High Yield Savings</td>
-                    <td id="savings-qty">$3,200.00</td>
-                    <td id="savings-value">$3,200.00</td>
+                    <td id="savings-qty">$0.00</td>
+                    <td id="savings-value">$0.00</td>
                     <td><button class="sell-btn" id="withdraw-btn">Withdraw</button></td>
                 </tr>
             </tbody>
@@ -48,7 +48,7 @@
         <div style="background:#fff; padding:32px 24px; border-radius:8px; min-width:300px; box-shadow:0 2px 8px #0002; text-align:center;">
             <h2>Withdraw from Savings</h2>
             <p>Enter amount to withdraw:</p>
-            <input type="number" id="withdraw-amount" min="0.01" max="3200.00" step="0.01" value="100.00" style="padding:8px; width:80%; margin-bottom:16px;" />
+            <input type="number" id="withdraw-amount" min="0.01" step="0.01" value="100.00" style="padding:8px; width:80%; margin-bottom:16px;" />
             <br>
             <button id="confirm-withdraw" class="sell-btn">Confirm</button>
             <button id="cancel-withdraw" style="margin-left:12px; padding:8px 16px; border-radius:4px; border:none; background:#ccc; color:#333; cursor:pointer;">Cancel</button>
@@ -65,11 +65,30 @@
         const savingsValue = document.getElementById('savings-value');
         const savingsQty = document.getElementById('savings-qty');
         const errorMsg = document.getElementById('withdraw-error');
-        let cash = 1000.00;
-        let savings = 3200.00;
+
+        let cash = 0.00;
+        let savings = 0.00;
 
         function formatMoney(val) {
             return '$' + val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        function loadData() {
+            // Load from localStorage
+            let storedCash = localStorage.getItem("balance");
+            let storedSavings = localStorage.getItem("savings");
+            cash = storedCash ? parseFloat(storedCash) : 1000;
+            savings = storedSavings ? parseFloat(storedSavings) : 0;
+
+            // Update UI
+            cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            savingsValue.textContent = formatMoney(savings);
+            savingsQty.textContent = formatMoney(savings);
+        }
+
+        function saveData() {
+            localStorage.setItem("balance", cash);
+            localStorage.setItem("savings", savings);
         }
 
         withdrawBtn.onclick = () => {
@@ -90,22 +109,30 @@
                 errorMsg.style.display = 'block';
                 return;
             }
-            // Too much withdrawal
+            // Invalid
             if (isNaN(amt) || amt < 0.01) {
                 errorMsg.textContent = 'Invalid amount.';
                 errorMsg.style.display = 'block';
                 return;
             }
+            // Too much
             if (amt > savings) {
                 errorMsg.textContent = 'You cannot withdraw more than your savings balance.';
                 errorMsg.style.display = 'block';
                 return;
             }
+            // Update values
             savings -= amt;
             cash += amt;
+
+            // Update UI
             savingsValue.textContent = formatMoney(savings);
             savingsQty.textContent = formatMoney(savings);
             cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+            // Save back to localStorage
+            saveData();
+
             modal.style.display = 'none';
         };
     </script>
