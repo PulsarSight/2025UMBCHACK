@@ -14,7 +14,7 @@
         .sell-btn:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
-<body onload="loadData()">
+<body>
     <div style="position: absolute; top: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
         Cash: $<span id="cash-amount">0.00</span>
         <a href="buyPage.html" style="margin-left:24px; font-size:0.95em; color:#2980b9; text-decoration:underline;">Go to Buy Page</a>
@@ -45,17 +45,22 @@
         <p style="margin-top:24px; color:#888;">Note: Some investments may not be available for immediate sale.</p>
     </div>
     <!-- Withdraw Modal -->
-    <div id="withdraw-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0005; z-index:1000; align-items:center; justify-content:center;">
+    <div id="withdraw-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0005; z-index:10000; align-items:center; justify-content:center;">
         <div style="background:#fff; padding:32px 24px; border-radius:8px; min-width:300px; box-shadow:0 2px 8px #0002; text-align:center;">
             <h2>Withdraw from Savings</h2>
             <p>Enter amount to withdraw:</p>
-            <input type="number" id="withdraw-amount" min="0.01" step="0.01" value="100.00" style="padding:8px; width:80%; margin-bottom:16px;" />
+            <input type="number" id="withdraw-amount" min="0.01" step="0.01" value="1000.00" style="padding:8px; width:80%; margin-bottom:16px;" />
             <br>
             <button id="confirm-withdraw" class="sell-btn">Confirm</button>
             <button id="cancel-withdraw" style="margin-left:12px; padding:8px 16px; border-radius:4px; border:none; background:#ccc; color:#333; cursor:pointer;">Cancel</button>
             <p id="withdraw-error" style="color:red; margin-top:10px; display:none;"></p>
         </div>
     </div>
+
+    <div style="position: fixed; bottom: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
+        Year: <span id="current-year">2020</span>
+    </div>
+
     <script>
         const withdrawBtn = document.getElementById('withdraw-btn');
         const modal = document.getElementById('withdraw-modal');
@@ -66,10 +71,11 @@
         const savingsValue = document.getElementById('savings-value');
         const savingsQty = document.getElementById('savings-qty');
         const errorMsg = document.getElementById('withdraw-error');
-        let yearSpan = document.getElementById('current-year');
+        const yearSpan = document.getElementById('current-year');
 
         let cash = 0.00;
         let savings = 0.00;
+        let year = 2020;
 
         function formatMoney(val) {
             return '$' + val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -80,26 +86,27 @@
             let storedCash = localStorage.getItem("balance");
             let storedSavings = localStorage.getItem("savings");
             let storedYear = localStorage.getItem("year");
-            cash = storedCash !== null ? parseFloat(storedCash) : 1000;
+
+            cash = storedCash !== null ? parseFloat(storedCash) : 10000;
             savings = storedSavings !== null ? parseFloat(storedSavings) : 0;
-            let year = storedYear !== null ? parseInt(storedYear) : 2020;
-            if (yearSpan) yearSpan.textContent = year;
+            year = storedYear !== null ? parseInt(storedYear) : 2020;
 
             // Update UI
             cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             savingsValue.textContent = formatMoney(savings);
             savingsQty.textContent = formatMoney(savings);
+            yearSpan.textContent = year;
         }
 
         function saveData() {
             localStorage.setItem("balance", cash);
             localStorage.setItem("savings", savings);
-            if (yearSpan) localStorage.setItem("year", yearSpan.textContent);
+            localStorage.setItem("year", year);
             loadData(); // Refresh UI after saving
         }
 
         withdrawBtn.onclick = () => {
-            withdrawInput.value = 100.00;
+            withdrawInput.value = 1000.00;
             withdrawInput.max = savings;
             errorMsg.style.display = 'none';
             modal.style.display = 'flex';
@@ -110,6 +117,7 @@
         confirmBtn.onclick = () => {
             const amtStr = withdrawInput.value.trim();
             const amt = parseFloat(amtStr);
+
             // Too many decimals
             if (!/^\d+(\.\d{1,2})?$/.test(amtStr)) {
                 errorMsg.textContent = 'Please enter a number with at most 2 decimal places.';
@@ -128,17 +136,20 @@
                 errorMsg.style.display = 'block';
                 return;
             }
+
             savings -= amt;
             cash += amt;
+
             savingsValue.textContent = formatMoney(savings);
             savingsQty.textContent = formatMoney(savings);
             cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
             saveData();
             modal.style.display = 'none';
         };
+
+        // Run once on page load
+        loadData();
     </script>
-    <div style="position: fixed; bottom: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
-        Year: <span id="current-year">2020</span>
-    </div>
 </body>
 </html>

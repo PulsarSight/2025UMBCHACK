@@ -10,6 +10,14 @@
       display: inline-block;
       min-width: 100px;
     }
+    .profit-positive {
+      color: green;
+      font-weight: bold;
+    }
+    .profit-negative {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -23,7 +31,7 @@
   </div>
 
   <div class="button-container">
-    <a href="buyPage.html"><button>Play Again</button></a>
+    <button onclick="playGame()">Play Again</button>
     <a href="index.html"><button>Home</button></a>
   </div>
 
@@ -34,26 +42,34 @@
     const adjustedMoney = 1400;
     const totalProfit = moneyMade - initialInvestment;
 
+    // Money formatter
+    function formatMoney(val) {
+      return val.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
     // Easing function (ease out cubic)
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3);
     }
 
-    // Count-up with easing
+    // Count-up with easing & formatting
     function countUpEased(elementId, start, end, duration, callback) {
       const element = document.getElementById(elementId);
       const startTime = performance.now();
 
       function update(currentTime) {
         const elapsed = currentTime - startTime;
-        let t = Math.min(elapsed / duration, 1); // normalized 0-1
-        t = easeOutCubic(t);                     // apply easing
+        let t = Math.min(elapsed / duration, 1);
+        t = easeOutCubic(t);
         const value = start + (end - start) * t;
-        element.textContent = value.toFixed(2);
+        element.textContent = formatMoney(value);
         if (elapsed < duration) {
           requestAnimationFrame(update);
         } else if (callback) {
-          callback(); // trigger next animation
+          callback();
         }
       }
 
@@ -75,6 +91,8 @@
       profitElement.classList.add('profit-negative');
     }
   </script>
+
+<script src="homescript.js"></script>
 
 </body>
 </html>

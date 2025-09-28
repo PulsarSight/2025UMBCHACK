@@ -23,20 +23,20 @@
 
     <div class="space-y-2">
       <p><strong>Year:</strong> <span id="year">2020</span></p>
-      <p><strong>Total Cash:</strong> $<span id="cash">1000</span></p>
-      <p><strong>Savings Balance:</strong> $<span id="savings">0</span></p>
+      <p><strong>Total Cash:</strong> $<span id="cash">10000</span></p>
+      <p><strong>Savings Account Balance:</strong> $<span id="savings">0</span></p>
     </div>
 
     <!-- Savings Button -->
     <div>
       <button onclick="toggleSavingsForm()" class="bg-green-600 text-white px-4 py-2 rounded">
-        Savings
+        Savings Account
       </button>
 
       <!-- Hidden savings form -->
       <div id="savingsForm" class="hidden mt-3 space-y-2">
-        <label for="saveAmount" class="block font-semibold">Enter amount to save:</label>
-        <input id="saveAmount" type="number" class="border p-2 rounded w-40" placeholder="0" />
+        <label for="saveAmount" class="block font-semibold">Enter amount to save into a savings account (Interest Rate: 0.004):</label>
+        <input id="saveAmount" type="number" class="border p-2 rounded w-40" placeholder="1000" />
         <button onclick="saveMoney()" class="bg-green-700 text-white px-4 py-2 rounded">Confirm Save</button>
       </div>
     </div>
@@ -53,16 +53,24 @@
   <script>
     // Game State
     let currentYear = 2020;
-    let cash = 1000;
+    let cash = 10000;
     let savings = 0;
-    const interestRate = 0.02;
+    const interestRate = 0.004;
+
+    // Helper function (same as in sellPage)
+    function formatMoney(val) {
+      return val.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
 
     // Load from localStorage or set defaults
     function loadData() {
       let storedCash = localStorage.getItem("balance");
       let storedSavings = localStorage.getItem("savings");
       let storedYear = localStorage.getItem("year");
-      cash = storedCash ? parseFloat(storedCash) : 1000;
+      cash = storedCash ? parseFloat(storedCash) : 10000;
       savings = storedSavings ? parseFloat(storedSavings) : 0;
       currentYear = storedYear ? parseInt(storedYear) : 2020;
     }
@@ -75,8 +83,9 @@
 
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
-      document.getElementById("cash").textContent = cash.toFixed(2);
-      document.getElementById("savings").textContent = savings.toFixed(2);
+      document.getElementById("cash").textContent = formatMoney(cash);
+      document.getElementById("savings").textContent = formatMoney(savings);
+
       // Disable next year button if year is 2025
       const nextYearBtn = document.querySelector('button[onclick="nextYear()"]');
       if (nextYearBtn) {
@@ -100,6 +109,7 @@
       cash -= amount;
       savings += amount;
       saveData();
+
       // Reset form
       document.getElementById("saveAmount").value = "";
       document.getElementById("savingsForm").classList.add("hidden");
