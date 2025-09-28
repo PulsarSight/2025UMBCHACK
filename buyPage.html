@@ -74,6 +74,28 @@
           </div>
         </div>
       </div>
+      <!-- Certificates of Deposit Section -->
+      <h3 style="margin-top:12px;">Certificates of Deposit (CDs)</h3>
+      <div class="panel" style="margin-top:8px;">
+        <div class="row" style="justify-content:space-between; align-items: baseline;">
+          <div>
+            <strong>Certificates of Deposit (CDs)</strong>
+            <div class="muted">Rates vary by term</div>
+          </div>
+          <div>
+            <span id="cdSummary">No active CDs</span>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:10px;">
+          <div class="field">
+            <label for="cdAmount"><strong>Invest amount</strong></label>
+            <input id="cdAmount" type="number" class="input" placeholder="1000" />
+          </div>
+          <div id="cdOptions" class="row" style="flex-wrap: wrap; gap: 8px; margin-top:8px;"></div>
+        </div>
+      </div>
+
 
       <!-- Stocks Section -->
       <h3 style="margin-top:12px;">Stocks</h3>
@@ -135,6 +157,7 @@
       document.getElementById("saveAmount").value = "";
       updateUI();
     }
+    
 
     function investStock(idx) {
       const amount = parseFloat(document.getElementById(`stock-amount-${idx}`).value);
@@ -241,6 +264,88 @@
         companies.forEach((c, idx) => c.value = savedCompanies[idx].value || 0);
       }
     }
+    // CD Rates by Year
+const cdRates = {
+  2020: {1: 0.02, 2: 0.025, 3: 0.03, 5: 0.044},
+  2021: {1: 0.023, 2: 0.03, 3: 0.036},
+  2022: {1: 0.026, 2: 0.033, 3: 0.04},
+  2023: {1: 0.029, 2: 0.037},
+  2024: {1: 0.036}
+};
+
+let cds = JSON.parse(localStorage.getItem("cds") || "[]");
+
+// Render CD buttons and summary
+function updateCDsUI() {
+  const cdOptionsDiv = document.getElementById("cdOptions");
+  cdOptionsDiv.innerHTML = "";
+
+  const cdOpts = cdRates[currentYear] || {};
+  for (const [term, rate] of Object.entries(cdOpts)) {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-success";
+    btn.textContent = `${term} Yr @ ${(rate*100).toFixed(1)}%`;
+    btn.onclick = () => investCD(term, rate);
+    cdOptionsDiv.appendChild(btn);
+  }
+
+  const cdSummaryEl = document.getElementById("cdSummary");
+  if (cds.length === 0) {
+    cdSummaryEl.textContent = "No active CDs";
+  } else {
+    cdSummaryEl.innerHTML = cds.map(cd =>
+      `Current Balance: $${formatMoney(cd.amount)} | Mature Year: ${cd.maturityYear}`
+    ).join("<br>");
+  }
+}
+
+  // Invest in CD
+  function investCD(term, rate) {
+    const amount = parseFloat(document.getElementById("cdAmount").value);
+    if (isNaN(amount) || amount <= 0) return;
+    if (amount > cash) { alert("Not enough cash!"); return; }
+
+    cash -= amount;
+    cds.push({
+      amount,
+      rate,
+      yearsLeft: parseInt(term),
+      maturityYear: currentYear + parseInt(term)
+    });
+    saveData();
+    document.getElementById("cdAmount").value = "";
+    updateCDsUI();
+    updateUI();
+  }
+
+  // Apply CD interest and maturity each year
+  function handleCDsNextYear() {
+    cds.forEach(cd => {
+      cd.amount *= (1 + cd.rate);
+      cd.yearsLeft -= 1;
+      if (cd.yearsLeft <= 0) cash += cd.amount; // matured CD returns to cash
+    });
+    cds = cds.filter(cd => cd.yearsLeft > 0);
+  }
+
+  // Add call to handleCDsNextYear() in your nextYear() function
+  function nextYear() {
+    if (currentYear >= 2025) return;
+    currentYear++;
+    savings += savings * interestRate;
+    companies.forEach(c => c.value += c.value * c.returnRate);
+    
+    handleCDsNextYear(); // process CDs
+    
+    saveData();
+    updateUI();
+    updateStocksUI();
+    updateCDsUI();
+  }
+
+  // Call updateCDsUI() on init
+  updateCDsUI();
+
 
     // ======= Init =======
     loadData();
