@@ -27,7 +27,7 @@
     <div class="panel">
       <h3 style="margin-top:0;">Available Assets</h3>
 
-      <!-- Asset: Savings Account (list item) -->
+      <!-- Asset: Savings Account -->
       <div class="panel" style="margin-top:8px;">
         <div class="row" style="justify-content:space-between; align-items: baseline;">
           <div>
@@ -50,6 +50,27 @@
         </div>
       </div>
 
+      <!-- Asset: Certificates of Deposit -->
+      <div class="panel" style="margin-top:16px;">
+        <div class="row" style="justify-content:space-between; align-items: baseline;">
+          <div>
+            <strong>Certificates of Deposit (CDs)</strong>
+            <div class="muted">Rates vary by term</div>
+          </div>
+          <div>
+            <span id="cdSummary">No active CDs</span>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:10px;">
+          <div class="field">
+            <label for="cdAmount"><strong>Invest amount</strong></label>
+            <input id="cdAmount" type="number" class="input" placeholder="1000" />
+          </div>
+          <div id="cdOptions" class="row" style="flex-wrap: wrap; gap: 8px; margin-top:8px;"></div>
+        </div>
+      </div>
+
       <div class="row" style="justify-content:space-between; margin-top:12px;">
         <button class="btn btn-secondary" onclick="window.location.href='sell.html'">Go to Sell Assets</button>
         <button id="next-year-btn" class="btn btn-primary" onclick="nextYear()">Next Year</button>
@@ -57,50 +78,68 @@
     </div>
   </div>
 
-  <!-- Chat widget -->
-  <button id="chat-toggle" title="Chat with AI">💬</button>
-  <div id="chat-popup" aria-live="polite" style="display:none">
-    <div id="chat-header">
-      <span>FinanceSim – AI Help</span>
-      <button id="chat-close" aria-label="Close chat">×</button>
-    </div>
-    <div id="chat-box"></div>
-    <div id="chat-input-row">
-      <input id="user-input" type="text" placeholder="Ask about inflation, APY, dividends…" />
-      <button id="send-btn">Send</button>
-    </div>
-  </div>
-
   <script>
-    // ======= State & persistence =======
-    const interestRate = 0.004; // 0.4% per year
+    // ======= State =======
+    const savingsRate = 0.004; // 0.4% yearly
     let currentYear = 2020;
     let cash = 10000;
     let savings = 0;
+    let cds = []; // {amount, rate, yearsLeft, maturityYear}
 
-    function formatMoney(val) {
-      return (val ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+    // CD rates by year
+    const cdRates = {
+      2020: {1: 0.02, 2: 0.025, 3: 0.03, 5: 0.044},
+      2021: {1: 0.023, 2: 0.03, 3: 0.036},
+      2022: {1: 0.026, 2: 0.033, 3: 0.04},
+      2023: {1: 0.029, 2: 0.037},
+      2024: {1: 0.036}
+    };
+
+    // ======= Persistence =======
     function loadData() {
-      const storedCash = localStorage.getItem("balance");
-      const storedSavings = localStorage.getItem("savings");
-      const storedYear = localStorage.getItem("year");
-      cash = storedCash ? parseFloat(storedCash) : 10000;
-      savings = storedSavings ? parseFloat(storedSavings) : 0;
-      currentYear = storedYear ? parseInt(storedYear) : 2020;
+      cash = parseFloat(localStorage.getItem("balance")) || 10000;
+      savings = parseFloat(localStorage.getItem("savings")) || 0;
+      currentYear = parseInt(localStorage.getItem("year")) || 2020;
+      cds = JSON.parse(localStorage.getItem("cds") || "[]");
     }
     function saveData() {
       localStorage.setItem("balance", cash);
       localStorage.setItem("savings", savings);
       localStorage.setItem("year", currentYear);
+      localStorage.setItem("cds", JSON.stringify(cds));
     }
 
     // ======= UI =======
+    function formatMoney(val) {
+      return (val ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
       document.getElementById("cash").textContent = formatMoney(cash);
       document.getElementById("savings").textContent = formatMoney(savings);
 
+      // Render CD buttons
+      const cdOpts = cdRates[currentYear] || {};
+      const cdOptionsDiv = document.getElementById("cdOptions");
+      cdOptionsDiv.innerHTML = "";
+      for (const [term, rate] of Object.entries(cdOpts)) {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-success";
+        btn.textContent = `${term} Yr @ ${(rate*100).toFixed(1)}%`;
+        btn.onclick = () => investCD(term, rate);
+        cdOptionsDiv.appendChild(btn);
+      }
+
+      // CD summary
+      if (cds.length === 0) {
+        document.getElementById("cdSummary").textContent = "No active CDs";
+      } else {
+        document.getElementById("cdSummary").innerHTML = cds.map(cd =>
+          `Current Balance: $${formatMoney(cd.amount)} | Mature Year: ${cd.maturityYear}`
+        ).join("<br>");
+      }
+
+      // Next year button
       const nextBtn = document.getElementById("next-year-btn");
       if (currentYear >= 2025) {
         nextBtn.textContent = "Review Final Assets";
@@ -123,19 +162,46 @@
       updateUI();
     }
 
+    function investCD(term, rate) {
+      const amount = parseFloat(document.getElementById("cdAmount").value);
+      if (isNaN(amount) || amount <= 0) return;
+      if (amount > cash) { alert("Not enough cash!"); return; }
+      cash -= amount;
+      cds.push({ 
+        amount, 
+        rate, 
+        yearsLeft: parseInt(term), 
+        maturityYear: currentYear + parseInt(term) 
+      });
+      saveData();
+      document.getElementById("cdAmount").value = "";
+      updateUI();
+    }
+
     function nextYear() {
       if (currentYear >= 2025) return;
       currentYear++;
-      // apply interest to savings
-      savings += savings * interestRate;
+
+      // Savings interest
+      savings *= (1 + savingsRate);
+
+      // Handle CDs (compound annually)
+      cds.forEach(cd => {
+        cd.amount *= (1 + cd.rate); // compound interest yearly
+        cd.yearsLeft -= 1;
+        if (cd.yearsLeft === 0) {
+          cash += cd.amount; // matured CD returns to cash
+        }
+      });
+      cds = cds.filter(cd => cd.yearsLeft > 0);
+
       saveData();
       updateUI();
     }
 
-    // init
-    loadData(); updateUI();
+    // ======= Init =======
+    loadData();
+    updateUI();
   </script>
-
-  <script src="aiJavascript.js" defer></script>
 </body>
 </html>
