@@ -53,7 +53,7 @@
     <div class="panel">
       <h3 style="margin-top:0;">Available Assets</h3>
 
-      <!-- Savings Account -->
+      <!-- Asset: Savings Account -->
       <div class="panel" style="margin-top:8px;">
         <div class="row" style="justify-content:space-between; align-items: baseline;">
           <div>
@@ -75,9 +75,26 @@
         </div>
       </div>
 
-      <!-- Stocks Section -->
-      <h3 style="margin-top:12px;">Stocks</h3>
-      <div id="stocks-panel"></div>
+      <!-- Asset: Certificates of Deposit -->
+      <div class="panel" style="margin-top:16px;">
+        <div class="row" style="justify-content:space-between; align-items: baseline;">
+          <div>
+            <strong>Certificates of Deposit (CDs)</strong>
+            <div class="muted">Rates vary by term</div>
+          </div>
+          <div>
+            <span id="cdSummary">No active CDs</span>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:10px;">
+          <div class="field">
+            <label for="cdAmount"><strong>Invest amount</strong></label>
+            <input id="cdAmount" type="number" class="input" placeholder="1000" />
+          </div>
+          <div id="cdOptions" class="row" style="flex-wrap: wrap; gap: 8px; margin-top:8px;"></div>
+        </div>
+      </div>
 
       <div class="row" style="justify-content:space-between; margin-top:12px;">
         <button class="btn btn-secondary" onclick="window.location.href='sell.html'">Go to Sell Assets</button>
@@ -86,129 +103,85 @@
     </div>
   </div>
 
-  <!-- Chat widget -->
-  <button id="chat-toggle" title="Chat with AI">💬</button>
-  <div id="chat-popup" aria-live="polite" style="display:none">
-    <div id="chat-header">
-      <span>FinanceSim – AI Help</span>
-      <button id="chat-close" aria-label="Close chat">×</button>
-    </div>
-    <div id="chat-box"></div>
-    <div id="chat-input-row">
-      <input id="user-input" type="text" placeholder="Ask about inflation, APY, dividends…" />
-      <button id="send-btn">Send</button>
-    </div>
-  </div>
-
   <script>
-    // ======= State & Persistence =======
-    const interestRate = 0.004;
+    // ======= State =======
+    const savingsRate = 0.004; // 0.4% yearly
     let currentYear = 2020;
     let cash = 10000;
     let savings = 0;
+    // Each CD: {amount, rate, yearsLeft, maturityYear}
+    let cds = [];
 
-    const companies = [
-      { name: "Pear", symbol: "P", industry: "Technology", value: 0, returnRate: 0.8 },
-      { name: "Numerics", symbol: "N", industry: "Cloud", value: 0, returnRate: 0.4 },
-      { name: "North Star Apparel Co", symbol: "NSA", industry: "Retail", value: 0, returnRate: -0.25 },
-      { name: "MedGeneral", symbol: "MG", industry: "Healthcare", value: 0, returnRate: 0.1 },
-      { name: "Titan Aviation", symbol: "TA", industry: "Aerospace", value: 0, returnRate: -0.35 },
-      { name: "Even Flow Water", symbol: "EFW", industry: "Utilities", value: 0, returnRate: 0.05 },
-      { name: "Vital Edge Therapeutics", symbol: "VET", industry: "Pharmaceutical", value: 0, returnRate: -0.8 },
-      { name: "D.A.W.G.S", symbol: "DWGS", industry: "Cybersecurity", value: 0, returnRate: 0.3 },
-      { name: "FinanciallyLit", symbol: "FL", industry: "Finance", value: 0, returnRate: -0.04 },
-      { name: "Pure Farmer", symbol: "PF", industry: "Agriculture", value: 0, returnRate: -0.1 },
-      { name: "FillerCorp", symbol: "FC", industry: "Miscellaneous", value: 0, returnRate: 0.02 }
-    ];
+    // CD rates by year
+    const cdRates = {
+      2020: {1: 0.02, 2: 0.025, 3: 0.03, 5: 0.044},
+      2021: {1: 0.023, 2: 0.03, 3: 0.036},
+      2022: {1: 0.026, 2: 0.033, 3: 0.04},
+      2023: {1: 0.029, 2: 0.037},
+      2024: {1: 0.036}
+    };
 
+    // ======= Precision helpers (round everything to cents) =======
+    const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+    const clean  = (n) => {
+      const x = round2(n);
+      return Math.abs(x) < 0.005 ? 0 : x; // avoid -0.00
+    };
+
+    function normalizeState() {
+      cash    = clean(cash);
+      savings = clean(savings);
+      cds = cds.map(cd => ({ ...cd, amount: clean(cd.amount) }));
+    }
+
+    // ======= Persistence =======
+    function loadData() {
+      cash = parseFloat(localStorage.getItem("balance")) || 10000;
+      savings = parseFloat(localStorage.getItem("savings")) || 0;
+      currentYear = parseInt(localStorage.getItem("year")) || 2020;
+      cds = JSON.parse(localStorage.getItem("cds") || "[]");
+      normalizeState();
+    }
+    function saveData() {
+      normalizeState();
+      localStorage.setItem("balance", cash);
+      localStorage.setItem("savings", savings);
+      localStorage.setItem("year", currentYear);
+      localStorage.setItem("cds", JSON.stringify(cds));
+    }
+
+    // ======= UI =======
     function formatMoney(val) {
-      return (val ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return (clean(val)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-
-    function saveMoney() {
-      const amount = parseFloat(document.getElementById("saveAmount").value);
-      if (isNaN(amount) || amount <= 0) return;
-      if (amount > cash) { alert("Not enough cash!"); return; }
-      cash -= amount;
-      savings += amount;
-      saveData();
-      document.getElementById("saveAmount").value = "";
-      updateUI();
-    }
-
-    function investStock(idx) {
-      const amount = parseFloat(document.getElementById(`stock-amount-${idx}`).value);
-      if (isNaN(amount) || amount <= 0) return;
-      if (amount > cash) { alert("Not enough cash!"); return; }
-      cash -= amount;
-      companies[idx].value += amount;
-      saveData();
-      document.getElementById(`stock-amount-${idx}`).value = "";
-      updateStocksUI();
-      updateUI();
-    }
-
-    function toggleCompany(idx) {
-      const panel = document.getElementById(`company-panel-${idx}`);
-      const currentlyOpen = panel.style.display === "block";
-      // close all panels
-      companies.forEach((c, i) => {
-        document.getElementById(`company-panel-${i}`).style.display = "none";
-      });
-      // toggle clicked panel
-      panel.style.display = currentlyOpen ? "none" : "block";
-    }
-
-    function renderStocks() {
-      const container = document.getElementById("stocks-panel");
-      container.innerHTML = "";
-      companies.forEach((c, idx) => {
-        const button = document.createElement("button");
-        button.className = "company-btn";
-        button.textContent = `${c.name} (${c.symbol}) - $${formatMoney(c.value)}`;
-        button.onclick = () => toggleCompany(idx);
-        container.appendChild(button);
-
-        const panel = document.createElement("div");
-        panel.className = "company-panel";
-        panel.id = `company-panel-${idx}`;
-        panel.innerHTML = `
-          <div>Industry: ${c.industry}</div>
-          <div class="row" style="margin-top:6px;">
-            <input id="stock-amount-${idx}" type="number" placeholder="1000" />
-            <button class="btn btn-success" onclick="investStock(${idx})">Invest</button>
-          </div>
-        `;
-        container.appendChild(panel);
-      });
-    }
-
-    function updateStocksUI() {
-      companies.forEach((c, idx) => {
-        const btn = document.getElementsByClassName("company-btn")[idx];
-        btn.textContent = `${c.name} (${c.symbol}) - $${formatMoney(c.value)}`;
-      });
-    }
-
-    function nextYear() {
-      if (currentYear >= 2025) return;
-      currentYear++;
-      // Apply savings interest
-      savings += savings * interestRate;
-      // Apply stock returns
-      companies.forEach(c => {
-        c.value += c.value * c.returnRate;
-      });
-      saveData();
-      updateUI();
-      updateStocksUI();
-    }
-
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
       document.getElementById("cash").textContent = formatMoney(cash);
       document.getElementById("savings").textContent = formatMoney(savings);
 
+      // Render CD buttons for the current year
+      const cdOpts = cdRates[currentYear] || {};
+      const cdOptionsDiv = document.getElementById("cdOptions");
+      cdOptionsDiv.innerHTML = "";
+      Object.entries(cdOpts).forEach(([term, rate]) => {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-success";
+        btn.textContent = `${term} Yr @ ${(rate*100).toFixed(1)}%`;
+        btn.onclick = () => investCD(parseInt(term, 10), rate);
+        cdOptionsDiv.appendChild(btn);
+      });
+
+      // CD summary
+      const cdSummaryEl = document.getElementById("cdSummary");
+      if (cds.length === 0) {
+        cdSummaryEl.textContent = "No active CDs";
+      } else {
+        cdSummaryEl.innerHTML = cds.map(cd =>
+          `Current Balance: $${formatMoney(cd.amount)} | Mature Year: ${cd.maturityYear}`
+        ).join("<br>");
+      }
+
+      // Next year button
       const nextBtn = document.getElementById("next-year-btn");
       if (currentYear >= 2025) {
         nextBtn.textContent = "Review Final Assets";
@@ -219,35 +192,60 @@
       }
     }
 
-    function saveData() {
-      localStorage.setItem("balance", cash);
-      localStorage.setItem("savings", savings);
-      localStorage.setItem("year", currentYear);
-      localStorage.setItem("companies", JSON.stringify(companies));
+    // ======= Actions =======
+    function saveMoney() {
+      let amount = parseFloat(document.getElementById("saveAmount").value);
+      if (isNaN(amount) || amount <= 0) return;
+      amount = clean(amount);
+      if (amount > cash) { alert("Not enough cash!"); return; }
+      cash    = clean(cash - amount);
+      savings = clean(savings + amount);
+      saveData();
+      document.getElementById("saveAmount").value = "";
+      updateUI();
     }
 
-    function loadData() {
-      const storedCash = localStorage.getItem("balance");
-      const storedSavings = localStorage.getItem("savings");
-      const storedYear = localStorage.getItem("year");
-      const storedCompanies = localStorage.getItem("companies");
+    function investCD(term, rate) {
+      let amount = parseFloat(document.getElementById("cdAmount").value);
+      if (isNaN(amount) || amount <= 0) return;
+      amount = clean(amount);
+      if (amount > cash) { alert("Not enough cash!"); return; }
+      cash = clean(cash - amount);
+      cds.push({
+        amount: amount,
+        rate: rate,
+        yearsLeft: parseInt(term, 10),
+        maturityYear: currentYear + parseInt(term, 10)
+      });
+      saveData();
+      document.getElementById("cdAmount").value = "";
+      updateUI();
+    }
 
-      cash = storedCash ? parseFloat(storedCash) : 10000;
-      savings = storedSavings ? parseFloat(storedSavings) : 0;
-      currentYear = storedYear ? parseInt(storedYear) : 2020;
+    function nextYear() {
+      if (currentYear >= 2025) return;
+      currentYear++;
 
-      if (storedCompanies) {
-        const savedCompanies = JSON.parse(storedCompanies);
-        companies.forEach((c, idx) => c.value = savedCompanies[idx].value || 0);
-      }
+      // Savings interest (round to cents)
+      savings = clean(savings * (1 + savingsRate));
+
+      // CDs compound annually, then reduce term; matured CDs pay out to cash
+      cds.forEach(cd => {
+        cd.amount = clean(cd.amount * (1 + cd.rate));
+        cd.yearsLeft -= 1;
+        if (cd.yearsLeft === 0) {
+          cash = clean(cash + cd.amount);
+        }
+      });
+      cds = cds.filter(cd => cd.yearsLeft > 0);
+
+      saveData();
+      updateUI();
     }
 
     // ======= Init =======
     loadData();
-    renderStocks();
     updateUI();
   </script>
-
-  <script src="aiJavascript.js" defer></script>
 </body>
 </html>
