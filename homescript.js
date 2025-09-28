@@ -8,7 +8,7 @@ function showInstructions() {
 
 function toggleMission() {
   const mission = document.getElementById("mission");
-  mission.classList.toggle("hidden");
+  mission.classList.toggle("show");
 }
 
 function openInstructions() {

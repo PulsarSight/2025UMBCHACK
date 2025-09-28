@@ -37,6 +37,19 @@ button:hover {
   border: 1px solid #ccc;
   border-radius: 8px;
   background-color: #f9f9f9;
+
+  /* Animation */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.5s ease, opacity 0.5s ease, padding 0.3s ease;
+}
+
+/* When visible */
+#mission.show {
+  max-height: 500px; /* adjust depending on content size */
+  opacity: 1;
+  padding: 20px;
 }
 
 /* Hidden utility class (for mission toggle only) */
