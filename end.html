@@ -36,12 +36,6 @@
   </div>
 
   <script>
-    // Example values (replace with actual game calculations)
-    const moneyMade = 1500;
-    const initialInvestment = 1000;
-    const adjustedMoney = 1400;
-    const totalProfit = moneyMade - initialInvestment;
-
     // Money formatter
     function formatMoney(val) {
       return val.toLocaleString(undefined, {
@@ -76,23 +70,34 @@
       requestAnimationFrame(update);
     }
 
-    // Animate in sequence
-    countUpEased('finalGrowth', 0, moneyMade, 1000, () => {
-      countUpEased('totalProfit', 0, totalProfit, 1000, () => {
-        countUpEased('adjustedGrowth', 0, adjustedMoney, 1000);
+    window.onload = function () {
+      // Get data from localStorage
+      const cash = parseFloat(localStorage.getItem("balance")) || 0;
+      const savings = parseFloat(localStorage.getItem("savings")) || 0;
+      const finalGrowth = cash + savings;
+
+      // Profit = Final Growth - 10000 (initial investment)
+      const profit = finalGrowth - 10000;
+
+      // Inflation-adjusted value: Final Growth / (1.03^5)
+      const inflationAdjusted = finalGrowth / Math.pow(1.03, 5);
+
+      // Animate in sequence: Final Growth → Profit → Inflation
+      countUpEased('finalGrowth', 0, finalGrowth, 1000, () => {
+        countUpEased('totalProfit', 0, profit, 1000, () => {
+          countUpEased('adjustedGrowth', 0, inflationAdjusted, 1000);
+        });
       });
-    });
 
-    // Apply color for Total Profit
-    const profitElement = document.getElementById('totalProfit');
-    if (totalProfit >= 0) {
-      profitElement.classList.add('profit-positive');
-    } else {
-      profitElement.classList.add('profit-negative');
-    }
+      // Apply color for Total Profit
+      const profitElement = document.getElementById('totalProfit');
+      if (profit >= 0) {
+        profitElement.classList.add('profit-positive');
+      } else {
+        profitElement.classList.add('profit-negative');
+      }
+    };
   </script>
-
-<script src="homescript.js"></script>
 
 </body>
 </html>

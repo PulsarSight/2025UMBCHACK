@@ -12,6 +12,8 @@
         th { background: #f0f0f0; }
         .sell-btn { background: #27ae60; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
         .sell-btn:disabled { background: #ccc; cursor: not-allowed; }
+        /* optional small style for finalize area */
+        #finalize-container { margin-top: 18px; text-align: right; }
     </style>
 </head>
 <body>
@@ -43,7 +45,11 @@
             </tbody>
         </table>
         <p style="margin-top:24px; color:#888;">Note: Some investments may not be available for immediate sale.</p>
+
+        <!-- Finalize area: button will be injected here when year >= 2025 -->
+        <div id="finalize-container"></div>
     </div>
+
     <!-- Withdraw Modal -->
     <div id="withdraw-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0005; z-index:10000; align-items:center; justify-content:center;">
         <div style="background:#fff; padding:32px 24px; border-radius:8px; min-width:300px; box-shadow:0 2px 8px #0002; text-align:center;">
@@ -72,6 +78,7 @@
         const savingsQty = document.getElementById('savings-qty');
         const errorMsg = document.getElementById('withdraw-error');
         const yearSpan = document.getElementById('current-year');
+        const finalizeContainer = document.getElementById('finalize-container');
 
         let cash = 0.00;
         let savings = 0.00;
@@ -96,13 +103,16 @@
             savingsValue.textContent = formatMoney(savings);
             savingsQty.textContent = formatMoney(savings);
             yearSpan.textContent = year;
+
+            // Update finalize button area (if year >= 2025)
+            updateFinalizeButton();
         }
 
         function saveData() {
             localStorage.setItem("balance", cash);
             localStorage.setItem("savings", savings);
             localStorage.setItem("year", year);
-            loadData(); // Refresh UI after saving
+            loadData(); // Refresh UI after saving (will also update finalize button)
         }
 
         withdrawBtn.onclick = () => {
@@ -147,6 +157,29 @@
             saveData();
             modal.style.display = 'none';
         };
+
+        // Create/update the finalize button area depending on year
+        function updateFinalizeButton() {
+            if (year >= 2025) {
+                // show button
+                finalizeContainer.innerHTML = `<button id="finalize-btn" class="sell-btn">Calculate Total Assets</button>`;
+                const finalizeBtn = document.getElementById('finalize-btn');
+                finalizeBtn.onclick = finalizeAndGo;
+            } else {
+                finalizeContainer.innerHTML = '';
+            }
+        }
+
+        function finalizeAndGo() {
+            // Calculate total assets (cash + savings)
+            const totalAssets = Number((cash + savings).toFixed(2));
+            // Store in localStorage so end.html can read it
+            localStorage.setItem('finalGrowth', totalAssets);
+            // Optionally store a timestamp or other metadata if you want
+            // localStorage.setItem('finalizedAt', new Date().toISOString());
+            // Navigate to end page
+            window.location.href = 'end.html';
+        }
 
         // Run once on page load
         loadData();
