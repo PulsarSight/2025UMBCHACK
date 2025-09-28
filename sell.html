@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sell Investments - Investment Simulator</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
+        .container { max-width: 700px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+        h1 { color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f0f0f0; }
+        .sell-btn { background: #27ae60; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        .sell-btn:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body onload="loadData()">
+    <div style="position: absolute; top: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
+        Cash: $<span id="cash-amount">0.00</span>
+    </div>
+    <div class="container">
+        <h1>Your Investments</h1>
+        <p>Below is a list of your current investments. Select which assets you would like to sell.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Current Value</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Savings Account</td>
+                    <td>High Yield Savings</td>
+                    <td id="savings-qty">$0.00</td>
+                    <td id="savings-value">$0.00</td>
+                    <td><button class="sell-btn" id="withdraw-btn">Withdraw</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="margin-top:24px; color:#888;">Note: Some investments may not be available for immediate sale.</p>
+    </div>
+    <!-- Withdraw Modal -->
+    <div id="withdraw-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0005; z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:32px 24px; border-radius:8px; min-width:300px; box-shadow:0 2px 8px #0002; text-align:center;">
+            <h2>Withdraw from Savings</h2>
+            <p>Enter amount to withdraw:</p>
+            <input type="number" id="withdraw-amount" min="0.01" step="0.01" value="100.00" style="padding:8px; width:80%; margin-bottom:16px;" />
+            <br>
+            <button id="confirm-withdraw" class="sell-btn">Confirm</button>
+            <button id="cancel-withdraw" style="margin-left:12px; padding:8px 16px; border-radius:4px; border:none; background:#ccc; color:#333; cursor:pointer;">Cancel</button>
+            <p id="withdraw-error" style="color:red; margin-top:10px; display:none;"></p>
+        </div>
+    </div>
+    <script>
+        const withdrawBtn = document.getElementById('withdraw-btn');
+        const modal = document.getElementById('withdraw-modal');
+        const confirmBtn = document.getElementById('confirm-withdraw');
+        const cancelBtn = document.getElementById('cancel-withdraw');
+        const withdrawInput = document.getElementById('withdraw-amount');
+        const cashAmount = document.getElementById('cash-amount');
+        const savingsValue = document.getElementById('savings-value');
+        const savingsQty = document.getElementById('savings-qty');
+        const errorMsg = document.getElementById('withdraw-error');
+
+        let cash = 0.00;
+        let savings = 0.00;
+
+        function formatMoney(val) {
+            return '$' + val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        function loadData() {
+            // Load from localStorage
+            let storedCash = localStorage.getItem("balance");
+            let storedSavings = localStorage.getItem("savings");
+            cash = storedCash ? parseFloat(storedCash) : 1000;
+            savings = storedSavings ? parseFloat(storedSavings) : 0;
+
+            // Update UI
+            cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            savingsValue.textContent = formatMoney(savings);
+            savingsQty.textContent = formatMoney(savings);
+        }
+
+        function saveData() {
+            localStorage.setItem("balance", cash);
+            localStorage.setItem("savings", savings);
+        }
+
+        withdrawBtn.onclick = () => {
+            withdrawInput.value = 100.00;
+            withdrawInput.max = savings;
+            errorMsg.style.display = 'none';
+            modal.style.display = 'flex';
+        };
+        cancelBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+        confirmBtn.onclick = () => {
+            const amtStr = withdrawInput.value.trim();
+            const amt = parseFloat(amtStr);
+            // Too many decimals
+            if (!/^\d+(\.\d{1,2})?$/.test(amtStr)) {
+                errorMsg.textContent = 'Please enter a number with at most 2 decimal places.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            // Invalid
+            if (isNaN(amt) || amt < 0.01) {
+                errorMsg.textContent = 'Invalid amount.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            // Too much
+            if (amt > savings) {
+                errorMsg.textContent = 'You cannot withdraw more than your savings balance.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            // Update values
+            savings -= amt;
+            cash += amt;
+
+            // Update UI
+            savingsValue.textContent = formatMoney(savings);
+            savingsQty.textContent = formatMoney(savings);
+            cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+            // Save back to localStorage
+            saveData();
+
+            modal.style.display = 'none';
+        };
+    </script>
+    <div style="position: fixed; bottom: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
+        Year: <span id="current-year">2020</span>
+    </div>
+</body>
+</html>
