@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Financial Simulator - Buy Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="aicss.css">
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col">
@@ -37,8 +38,9 @@
 
       <!-- Hidden savings form -->
       <div id="savingsForm" class="hidden mt-3 space-y-2">
-        <label for="saveAmount" class="block font-semibold">Enter amount to save into a savings account (Interest Rate:
-          0.004):</label>
+        <label for="saveAmount" class="block font-semibold">
+          Enter amount to save into a savings account (Interest Rate: 0.004):
+        </label>
         <input id="saveAmount" type="number" class="border p-2 rounded w-40" placeholder="1000" />
         <button onclick="saveMoney()" class="bg-green-700 text-white px-4 py-2 rounded">Confirm Save</button>
       </div>
@@ -50,29 +52,40 @@
         Next Year
       </button>
     </div>
+
+    <!-- Embedded AI Chat Panel -->
+    <div id="chat-container" class="w-full md:w-96 bg-white border rounded-lg shadow-lg flex flex-col mt-6">
+      <div id="chat-header" class="bg-blue-600 text-white p-3 font-bold rounded-t-lg">
+        Finance Guide AI
+      </div>
+      <div id="chat-box" class="flex-1 p-3 overflow-y-auto min-h-[200px]">
+        <!-- AI and user messages will appear here -->
+      </div>
+      <div class="flex p-2 border-t">
+        <input type="text" id="user-input" placeholder="Ask me something..."
+          class="flex-1 border p-2 rounded-l" />
+        <button id="send-btn" class="bg-blue-600 text-white px-4 rounded-r hover:bg-blue-700">Send</button>
+      </div>
+    </div>
+
   </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-200 text-center p-4">
+  <footer class="bg-gray-200 text-center p-4 mt-auto">
     © 2025 FinanceSim
   </footer>
 
+  <!-- Game logic -->
   <script>
-    // Game State
     let currentYear = 2020;
     let cash = 10000;
     let savings = 0;
     const interestRate = 0.004;
 
-    // Helper function (same as in sellPage)
     function formatMoney(val) {
-      return val.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+      return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // Load from localStorage or set defaults
     function loadData() {
       let storedCash = localStorage.getItem("balance");
       let storedSavings = localStorage.getItem("savings");
@@ -82,78 +95,57 @@
       currentYear = storedYear ? parseInt(storedYear) : 2020;
     }
 
-    // Save to localStorage
     function saveData() {
       localStorage.setItem("balance", cash);
       localStorage.setItem("savings", savings);
       localStorage.setItem("year", currentYear);
     }
 
-    // Update UI and swap button if needed
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
       document.getElementById("cash").textContent = formatMoney(cash);
       document.getElementById("savings").textContent = formatMoney(savings);
 
       const buttonContainer = document.getElementById("button-container");
-
       if (currentYear >= 2025) {
-        // Replace Next Year button with Review Final Assets (same style)
-        buttonContainer.innerHTML = `
-        <button onclick="window.location.href='sell.html'" 
-                class="bg-blue-600 text-white px-4 py-2 rounded">
-          Review Final Assets
-        </button>
-      `;
+        buttonContainer.innerHTML = `<button onclick="window.location.href='sell.html'"
+          class="bg-blue-600 text-white px-4 py-2 rounded">Review Final Assets</button>`;
       } else {
-        // Ensure Next Year button exists (recreate if necessary)
-        buttonContainer.innerHTML = `
-        <button id="next-year-btn" onclick="nextYear()" class="bg-blue-600 text-white px-4 py-2 rounded">
-          Next Year
-        </button>
-      `;
+        buttonContainer.innerHTML = `<button id="next-year-btn" onclick="nextYear()"
+          class="bg-blue-600 text-white px-4 py-2 rounded">Next Year</button>`;
       }
     }
 
     function toggleSavingsForm() {
-      const form = document.getElementById("savingsForm");
-      form.classList.toggle("hidden");
+      document.getElementById("savingsForm").classList.toggle("hidden");
     }
 
     function saveMoney() {
       let amount = parseFloat(document.getElementById("saveAmount").value);
       if (isNaN(amount) || amount <= 0) return;
-
-      if (amount > cash) {
-        alert("Not enough cash!");
-        return;
-      }
+      if (amount > cash) { alert("Not enough cash!"); return; }
       cash -= amount;
       savings += amount;
       saveData();
-
-      // Reset form
       document.getElementById("saveAmount").value = "";
       document.getElementById("savingsForm").classList.add("hidden");
-
       updateUI();
     }
 
-    // Called when user clicks Next Year (or the recreated Next Year button)
     function nextYear() {
-      if (currentYear >= 2025) return; // safety
+      if (currentYear >= 2025) return;
       currentYear++;
-      // apply interest to savings
       savings += savings * interestRate;
-
       saveData();
       updateUI();
     }
 
-    // On page load, sync with localStorage and render UI correctly
     loadData();
     updateUI();
   </script>
-  
+
+  <!-- AI Chat JS -->
+  <script src="aiJavascript.js"></script>
+
 </body>
 </html>
