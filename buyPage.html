@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Financial Simulator - Buy Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-blue-600 text-white p-4 flex justify-between">
+    <div class="font-bold text-xl">FinanceSim</div>
+    <div class="space-x-4">
+      <a href="buyPage.html" class="hover:underline">Investment Hub</a>
+      <a href="sellPage.html" class="hover:underline">Sell Assets</a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 space-y-6">
+    <h1 class="text-2xl font-bold">Investment Hub</h1>
+
+    <div class="space-y-2">
+      <p><strong>Year:</strong> <span id="year">2020</span></p>
+      <p><strong>Total Cash:</strong> $<span id="cash">1000</span></p>
+      <p><strong>Savings Balance:</strong> $<span id="savings">0</span></p>
+    </div>
+
+    <!-- Savings Button -->
+    <div>
+      <button onclick="toggleSavingsForm()" class="bg-green-600 text-white px-4 py-2 rounded">
+        Savings
+      </button>
+
+      <!-- Hidden savings form -->
+      <div id="savingsForm" class="hidden mt-3 space-y-2">
+        <label for="saveAmount" class="block font-semibold">Enter amount to save:</label>
+        <input id="saveAmount" type="number" class="border p-2 rounded w-40" placeholder="0" />
+        <button onclick="saveMoney()" class="bg-green-700 text-white px-4 py-2 rounded">Confirm Save</button>
+      </div>
+    </div>
+
+    <!-- Next Year -->
+    <button onclick="nextYear()" class="bg-blue-600 text-white px-4 py-2 rounded">Next Year</button>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-200 text-center p-4">
+    © 2025 FinanceSim
+  </footer>
+
+  <script>
+    // Game State
+    let currentYear = 2020;
+    let cash = 1000;
+    let savings = 0;
+    const interestRate = 0.02;
+
+    function updateUI() {
+      document.getElementById("year").textContent = currentYear;
+      document.getElementById("cash").textContent = cash.toFixed(2);
+      document.getElementById("savings").textContent = savings.toFixed(2);
+    }
+
+    function toggleSavingsForm() {
+      const form = document.getElementById("savingsForm");
+      form.classList.toggle("hidden");
+    }
+
+    function saveMoney() {
+      let amount = parseFloat(document.getElementById("saveAmount").value);
+      if (isNaN(amount) || amount <= 0) return;
+
+      if (amount > cash) {
+        alert("Not enough cash!");
+        return;
+      }
+      cash -= amount;
+      savings += amount;
+
+      // Reset form
+      document.getElementById("saveAmount").value = "";
+      document.getElementById("savingsForm").classList.add("hidden");
+
+      updateUI();
+    }
+
+    function nextYear() {
+      if (currentYear >= 2025) {
+        //goes to end page
+        return;
+      }
+      currentYear++;
+      savings += savings * interestRate; // apply interest
+      updateUI();
+    }
+
+    updateUI();
+  </script>
+</body>
+</html>
