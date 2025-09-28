@@ -16,7 +16,6 @@
   </nav>
 
   <div class="container">
-    <!-- Top summary bar: Year + Cash -->
     <div class="summary">
       <div class="item">Year: <span id="current-year" class="val">2020</span></div>
       <div class="item">Cash: $<span id="cash-amount" class="val">0.00</span></div>
@@ -35,8 +34,8 @@
             <th>Action</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Savings as an asset to withdraw from -->
+        <tbody id="assets-body">
+          <!-- Savings Account -->
           <tr>
             <td>Savings Account</td>
             <td>High Yield Savings</td>
@@ -70,7 +69,7 @@
   </div>
 
   <script>
-    // Elements
+    // ======= Elements =======
     const withdrawBtn = document.getElementById('withdraw-btn');
     const modal = document.getElementById('withdraw-modal');
     const confirmBtn = document.getElementById('confirm-withdraw');
@@ -83,58 +82,43 @@
     const errorMsg = document.getElementById('withdraw-error');
     const yearSpan = document.getElementById('current-year');
     const nextOrFinalizeBtn = document.getElementById('next-or-finalize-btn');
+    const assetsBody = document.getElementById('assets-body');
 
-    // State
-    const interestRate = 0.004; // keep behavior consistent with Buy page
+    // ======= State =======
+    const interestRate = 0.004;
     let cash = 0.00;
     let savings = 0.00;
     let year = 2020;
+    let companies = [];
 
     function formatMoney(val) {
       return (val ?? 0).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
     }
+
     function loadData() {
       cash = parseFloat(localStorage.getItem("balance")) || 10000;
       savings = parseFloat(localStorage.getItem("savings")) || 0;
       year = parseInt(localStorage.getItem("year")) || 2020;
+      const savedCompanies = JSON.parse(localStorage.getItem("companies")) || [];
+      companies = savedCompanies.map(c => ({ ...c })); // clone
 
       cashAmount.textContent = formatMoney(cash);
       savingsValue.textContent = "$" + formatMoney(savings);
       savingsQty.textContent = "$" + formatMoney(savings);
       yearSpan.textContent = year;
 
+      renderStocks();
       updateNextOrFinalize();
     }
+
     function saveData() {
       localStorage.setItem("balance", cash);
       localStorage.setItem("savings", savings);
       localStorage.setItem("year", year);
+      localStorage.setItem("companies", JSON.stringify(companies));
     }
 
-    // Next Year / Finalize control
-    function updateNextOrFinalize() {
-      if (year >= 2025) {
-        nextOrFinalizeBtn.textContent = "Calculate Total Assets";
-        nextOrFinalizeBtn.onclick = () => {
-          const totalAssets = Number((cash + savings).toFixed(2));
-          localStorage.setItem('finalGrowth', totalAssets);
-          window.location.href = 'end.html';
-        };
-      } else {
-        nextOrFinalizeBtn.textContent = "Next Year";
-        nextOrFinalizeBtn.onclick = nextYear;
-      }
-    }
-    function nextYear() {
-      if (year >= 2025) return;
-      year++;
-      // Apply same interest rule as Buy page (so advancing here or there is consistent)
-      savings += savings * interestRate;
-      saveData();
-      loadData(); // refresh labels + button
-    }
-
-    // Modal controls
+    // ======= Savings Withdraw =======
     function showModal() { modal.classList.add('show'); }
     function hideModal() { modal.classList.remove('show'); }
 
@@ -157,10 +141,63 @@
       savings -= amt; cash += amt;
       saveData();
       hideModal();
-      loadData(); // refresh UI
+      loadData();
     };
 
-    // init
+    // ======= Stocks Sell Logic =======
+    function renderStocks() {
+      // remove old stock rows
+      Array.from(assetsBody.querySelectorAll('.stock-row')).forEach(el => el.remove());
+      companies.forEach((c, idx) => {
+        if (c.value <= 0) return; // skip companies with no investment
+        const tr = document.createElement('tr');
+        tr.classList.add('stock-row');
+        tr.innerHTML = `
+          <td>Stock</td>
+          <td>${c.name}</td>
+          <td>$${formatMoney(c.value)}</td>
+          <td>$${formatMoney(c.value)}</td>
+          <td><button class="btn btn-success" onclick="sellStock(${idx})">Sell</button></td>
+        `;
+        assetsBody.appendChild(tr);
+      });
+    }
+
+    function sellStock(idx) {
+      const amount = companies[idx].value;
+      if (amount <= 0) return;
+      cash += amount;
+      companies[idx].value = 0;
+      saveData();
+      loadData();
+    }
+
+    // ======= Next Year / Finalize =======
+    function nextYear() {
+      if (year >= 2025) return;
+      year++;
+      savings += savings * interestRate;
+      // apply stock growth
+      companies.forEach(c => c.value += c.value * (c.returnRate || 0));
+      saveData();
+      loadData();
+    }
+
+    function updateNextOrFinalize() {
+      if (year >= 2025) {
+        nextOrFinalizeBtn.textContent = "Calculate Total Assets";
+        nextOrFinalizeBtn.onclick = () => {
+          const totalAssets = Number((cash + savings + companies.reduce((sum,c)=>sum+c.value,0)).toFixed(2));
+          localStorage.setItem('finalGrowth', totalAssets);
+          window.location.href = 'end.html';
+        };
+      } else {
+        nextOrFinalizeBtn.textContent = "Next Year";
+        nextOrFinalizeBtn.onclick = nextYear;
+      }
+    }
+
+    // ======= Init =======
     loadData();
   </script>
 </body>
