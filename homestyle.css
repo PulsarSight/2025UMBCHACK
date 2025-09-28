@@ -102,3 +102,30 @@ button:hover {
   cursor: pointer;
   font-weight: bold;
 }
+
+/* Results box for end page */
+.results {
+  margin-top: 40px;
+  font-size: 22px;
+  line-height: 1.5;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  display: inline-block;
+  text-align: left;
+}
+
+.results p {
+  margin: 10px 0;
+}
+
+.profit-positive {
+  color: green;
+  font-weight: bold;
+}
+
+.profit-negative {
+  color: red;
+  font-weight: bold;
+}

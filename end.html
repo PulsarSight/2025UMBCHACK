@@ -4,54 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Congrats!</title>
-  <link rel="stylesheet" href="homestyle.css"> <!-- reuse your CSS -->
+  <link rel="stylesheet" href="homestyle.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 50px;
-      background-color: #f0f0f0;
-    }
-
-    h1 {
-      font-size: 48px;
-      color: #4CAF50;
-    }
-
-    .results {
-      margin-top: 40px;
-      font-size: 22px;
-      line-height: 1.5;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background-color: #f9f9f9;
+    .results span {
       display: inline-block;
-      text-align: left;
-    }
-
-    .button-container {
-      margin-top: 30px;
-    }
-
-    .button-container a {
-      text-decoration: none;
-    }
-
-    .button-container button {
-      padding: 15px 30px;
-      margin: 10px;
-      font-size: 18px;
-      cursor: pointer;
-      border-radius: 8px;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      transition: background-color 0.3s ease;
-    }
-
-    .button-container button:hover {
-      background-color: #45a049;
+      min-width: 100px;
     }
   </style>
 </head>
@@ -60,9 +17,9 @@
   <h1>Congrats!</h1>
 
   <div class="results">
-    <p><strong>Final Growth:</strong> $<span id="finalGrowth">[money made after investing]</span></p>
-    <p><strong>Total Profit:</strong> $<span id="totalProfit">[total profit]</span></p>
-    <p><strong>Applied Total Inflation:</strong> $<span id="adjustedGrowth">[money after inflation]</span></p>
+    <p><strong>Final Growth:</strong> $<span id="finalGrowth">0</span></p>
+    <p><strong>Total Profit:</strong> $<span id="totalProfit">0</span></p>
+    <p><strong>Applied Total Inflation:</strong> $<span id="adjustedGrowth">0</span></p>
   </div>
 
   <div class="button-container">
@@ -71,16 +28,52 @@
   </div>
 
   <script>
-    // Example of dynamically filling in values:
-    const moneyMade = 1500;       // total amount after investing
-    const initialInvestment = 1000; // initial invested amount
-    const adjustedMoney = 1400;   // inflation-adjusted money
-
+    // Example values (replace with actual game calculations)
+    const moneyMade = 1500;
+    const initialInvestment = 1000;
+    const adjustedMoney = 1400;
     const totalProfit = moneyMade - initialInvestment;
 
-    document.getElementById('finalGrowth').textContent = moneyMade.toFixed(2);
-    document.getElementById('totalProfit').textContent = totalProfit.toFixed(2);
-    document.getElementById('adjustedGrowth').textContent = adjustedMoney.toFixed(2);
+    // Easing function (ease out cubic)
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    // Count-up with easing
+    function countUpEased(elementId, start, end, duration, callback) {
+      const element = document.getElementById(elementId);
+      const startTime = performance.now();
+
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        let t = Math.min(elapsed / duration, 1); // normalized 0-1
+        t = easeOutCubic(t);                     // apply easing
+        const value = start + (end - start) * t;
+        element.textContent = value.toFixed(2);
+        if (elapsed < duration) {
+          requestAnimationFrame(update);
+        } else if (callback) {
+          callback(); // trigger next animation
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    // Animate in sequence
+    countUpEased('finalGrowth', 0, moneyMade, 1000, () => {
+      countUpEased('totalProfit', 0, totalProfit, 1000, () => {
+        countUpEased('adjustedGrowth', 0, adjustedMoney, 1000);
+      });
+    });
+
+    // Apply color for Total Profit
+    const profitElement = document.getElementById('totalProfit');
+    if (totalProfit >= 0) {
+      profitElement.classList.add('profit-positive');
+    } else {
+      profitElement.classList.add('profit-negative');
+    }
   </script>
 
 </body>
