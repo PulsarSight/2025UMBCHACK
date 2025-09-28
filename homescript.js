@@ -1,4 +1,7 @@
 function playGame() {
+  localStorage.removeItem('balance');
+  localStorage.removeItem('savings');
+  localStorage.removeItem('year');
   window.location.href = "buyPage.html"; // replace with teammate’s filename
 }
 

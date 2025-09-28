@@ -57,10 +57,31 @@
     let savings = 0;
     const interestRate = 0.02;
 
+    // Load from localStorage or set defaults
+    function loadData() {
+      let storedCash = localStorage.getItem("balance");
+      let storedSavings = localStorage.getItem("savings");
+      let storedYear = localStorage.getItem("year");
+      cash = storedCash ? parseFloat(storedCash) : 1000;
+      savings = storedSavings ? parseFloat(storedSavings) : 0;
+      currentYear = storedYear ? parseInt(storedYear) : 2020;
+    }
+
+    function saveData() {
+      localStorage.setItem("balance", cash);
+      localStorage.setItem("savings", savings);
+      localStorage.setItem("year", currentYear);
+    }
+
     function updateUI() {
       document.getElementById("year").textContent = currentYear;
       document.getElementById("cash").textContent = cash.toFixed(2);
       document.getElementById("savings").textContent = savings.toFixed(2);
+      // Disable next year button if year is 2025
+      const nextYearBtn = document.querySelector('button[onclick="nextYear()"]');
+      if (nextYearBtn) {
+        nextYearBtn.disabled = currentYear >= 2025;
+      }
     }
 
     function toggleSavingsForm() {
@@ -78,7 +99,7 @@
       }
       cash -= amount;
       savings += amount;
-
+      saveData();
       // Reset form
       document.getElementById("saveAmount").value = "";
       document.getElementById("savingsForm").classList.add("hidden");
@@ -88,14 +109,16 @@
 
     function nextYear() {
       if (currentYear >= 2025) {
-        //goes to end page
         return;
       }
       currentYear++;
       savings += savings * interestRate; // apply interest
+      saveData();
       updateUI();
     }
 
+    // On page load, sync with localStorage
+    loadData();
     updateUI();
   </script>
 </body>

@@ -17,6 +17,7 @@
 <body onload="loadData()">
     <div style="position: absolute; top: 24px; right: 40px; font-size: 1.1em; color: #2c3e50;">
         Cash: $<span id="cash-amount">0.00</span>
+        <a href="buyPage.html" style="margin-left:24px; font-size:0.95em; color:#2980b9; text-decoration:underline;">Go to Buy Page</a>
     </div>
     <div class="container">
         <h1>Your Investments</h1>
@@ -65,6 +66,7 @@
         const savingsValue = document.getElementById('savings-value');
         const savingsQty = document.getElementById('savings-qty');
         const errorMsg = document.getElementById('withdraw-error');
+        let yearSpan = document.getElementById('current-year');
 
         let cash = 0.00;
         let savings = 0.00;
@@ -77,8 +79,11 @@
             // Load from localStorage
             let storedCash = localStorage.getItem("balance");
             let storedSavings = localStorage.getItem("savings");
-            cash = storedCash ? parseFloat(storedCash) : 1000;
-            savings = storedSavings ? parseFloat(storedSavings) : 0;
+            let storedYear = localStorage.getItem("year");
+            cash = storedCash !== null ? parseFloat(storedCash) : 1000;
+            savings = storedSavings !== null ? parseFloat(storedSavings) : 0;
+            let year = storedYear !== null ? parseInt(storedYear) : 2020;
+            if (yearSpan) yearSpan.textContent = year;
 
             // Update UI
             cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -89,6 +94,8 @@
         function saveData() {
             localStorage.setItem("balance", cash);
             localStorage.setItem("savings", savings);
+            if (yearSpan) localStorage.setItem("year", yearSpan.textContent);
+            loadData(); // Refresh UI after saving
         }
 
         withdrawBtn.onclick = () => {
@@ -121,18 +128,12 @@
                 errorMsg.style.display = 'block';
                 return;
             }
-            // Update values
             savings -= amt;
             cash += amt;
-
-            // Update UI
             savingsValue.textContent = formatMoney(savings);
             savingsQty.textContent = formatMoney(savings);
             cashAmount.textContent = cash.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-
-            // Save back to localStorage
             saveData();
-
             modal.style.display = 'none';
         };
     </script>
