@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FinanceSim – Sell Assets</title>
   <link rel="stylesheet" href="homestyle.css">
+  <style>
+    .popup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+    .popup.show { display: flex; }
+    .popup-content { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
+    .close { cursor:pointer; font-size: 24px; float: right; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+    .company-sell { border: 1px solid #ccc; padding: 8px; border-radius: 6px; margin-bottom: 6px; background-color: #fafafa; }
+  </style>
 </head>
 <body>
   <nav class="nav">
@@ -24,27 +32,18 @@
     <h1>Your Investments</h1>
     <div class="panel">
       <p style="margin:0 0 8px;">Select which assets you want to sell.</p>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Name</th>
-            <th>Quantity / Balance</th>
-            <th>Current Value</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="assets-body">
-          <!-- Savings Account -->
-          <tr>
-            <td>Savings Account</td>
-            <td>High Yield Savings</td>
-            <td id="savings-qty">$0.00</td>
-            <td id="savings-value">$0.00</td>
-            <td><button class="btn btn-success" id="withdraw-btn">Withdraw</button></td>
-          </tr>
-        </tbody>
-      </table>
+
+      <!-- Savings -->
+      <div id="savings-row">
+        <div class="row">
+          <div>Savings Account</div>
+          <div>$<span id="savings-value">0.00</span></div>
+          <button class="btn btn-success" id="withdraw-btn">Withdraw</button>
+        </div>
+      </div>
+
+      <!-- Stocks -->
+      <div id="stocks-container" style="margin-top:12px;"></div>
 
       <div class="row" style="justify-content:space-between; margin-top:12px;">
         <button class="btn btn-secondary" onclick="window.location.href='buyPage.html'">Investment Hub</button>
@@ -68,8 +67,22 @@
     </div>
   </div>
 
+  <!-- Sell Stock Modal -->
+  <div id="sell-stock-modal" class="popup">
+    <div class="popup-content">
+      <span class="close" id="cancel-sell">&times;</span>
+      <h2 id="sell-stock-name">Sell Stock</h2>
+      <p>Enter amount to sell:</p>
+      <input type="number" id="sell-stock-amount" min="0.01" step="0.01" value="0.00" class="input" style="width: 80%;" />
+      <div class="row" style="margin-top:12px;">
+        <button id="confirm-sell" class="btn btn-success">Confirm</button>
+        <button id="cancel-sell-2" class="btn btn-secondary">Cancel</button>
+      </div>
+      <p id="sell-error" style="color: var(--danger); margin-top:10px; display:none;"></p>
+    </div>
+  </div>
+
   <script>
-    // ======= Elements =======
     const withdrawBtn = document.getElementById('withdraw-btn');
     const modal = document.getElementById('withdraw-modal');
     const confirmBtn = document.getElementById('confirm-withdraw');
@@ -78,17 +91,20 @@
     const withdrawInput = document.getElementById('withdraw-amount');
     const cashAmount = document.getElementById('cash-amount');
     const savingsValue = document.getElementById('savings-value');
-    const savingsQty = document.getElementById('savings-qty');
-    const errorMsg = document.getElementById('withdraw-error');
     const yearSpan = document.getElementById('current-year');
     const nextOrFinalizeBtn = document.getElementById('next-or-finalize-btn');
-    const assetsBody = document.getElementById('assets-body');
 
-    // ======= State =======
-    const interestRate = 0.004;
-    let cash = 0.00;
-    let savings = 0.00;
-    let year = 2020;
+    // Stocks elements
+    const stocksContainer = document.getElementById('stocks-container');
+    const sellModal = document.getElementById('sell-stock-modal');
+    const sellStockName = document.getElementById('sell-stock-name');
+    const sellAmountInput = document.getElementById('sell-stock-amount');
+    const confirmSellBtn = document.getElementById('confirm-sell');
+    const cancelSellBtnX = document.getElementById('cancel-sell');
+    const cancelSellBtn = document.getElementById('cancel-sell-2');
+    const sellError = document.getElementById('sell-error');
+
+    let cash = 0.00, savings = 0.00, year = 2020;
     let companies = [];
 
     function formatMoney(val) {
@@ -99,16 +115,8 @@
       cash = parseFloat(localStorage.getItem("balance")) || 10000;
       savings = parseFloat(localStorage.getItem("savings")) || 0;
       year = parseInt(localStorage.getItem("year")) || 2020;
-      const savedCompanies = JSON.parse(localStorage.getItem("companies")) || [];
-      companies = savedCompanies.map(c => ({ ...c })); // clone
-
-      cashAmount.textContent = formatMoney(cash);
-      savingsValue.textContent = "$" + formatMoney(savings);
-      savingsQty.textContent = "$" + formatMoney(savings);
-      yearSpan.textContent = year;
-
-      renderStocks();
-      updateNextOrFinalize();
+      companies = JSON.parse(localStorage.getItem("companies") || "[]");
+      updateUI();
     }
 
     function saveData() {
@@ -118,76 +126,32 @@
       localStorage.setItem("companies", JSON.stringify(companies));
     }
 
-    // ======= Savings Withdraw =======
-    function showModal() { modal.classList.add('show'); }
-    function hideModal() { modal.classList.remove('show'); }
+    function updateUI() {
+      cashAmount.textContent = formatMoney(cash);
+      savingsValue.textContent = formatMoney(savings);
+      yearSpan.textContent = year;
 
-    withdrawBtn.onclick = () => {
-      withdrawInput.value = 1000.00;
-      withdrawInput.max = savings;
-      errorMsg.style.display = 'none';
-      showModal();
-    };
-    cancelBtn.onclick = hideModal;
-    cancelBtnX.onclick = hideModal;
-
-    confirmBtn.onclick = () => {
-      const amtStr = withdrawInput.value.trim();
-      const amt = parseFloat(amtStr);
-      if (!/^\d+(\.\d{1,2})?$/.test(amtStr)) { errorMsg.textContent = 'Use at most 2 decimals.'; errorMsg.style.display = 'block'; return; }
-      if (isNaN(amt) || amt < 0.01) { errorMsg.textContent = 'Invalid amount.'; errorMsg.style.display = 'block'; return; }
-      if (amt > savings) { errorMsg.textContent = 'Cannot withdraw more than savings.'; errorMsg.style.display = 'block'; return; }
-
-      savings -= amt; cash += amt;
-      saveData();
-      hideModal();
-      loadData();
-    };
-
-    // ======= Stocks Sell Logic =======
-    function renderStocks() {
-      // remove old stock rows
-      Array.from(assetsBody.querySelectorAll('.stock-row')).forEach(el => el.remove());
+      // Only show companies with >0 value
+      stocksContainer.innerHTML = "";
       companies.forEach((c, idx) => {
-        if (c.value <= 0) return; // skip companies with no investment
-        const tr = document.createElement('tr');
-        tr.classList.add('stock-row');
-        tr.innerHTML = `
-          <td>Stock</td>
-          <td>${c.name}</td>
-          <td>$${formatMoney(c.value)}</td>
-          <td>$${formatMoney(c.value)}</td>
-          <td><button class="btn btn-success" onclick="sellStock(${idx})">Sell</button></td>
-        `;
-        assetsBody.appendChild(tr);
+        if (c.value > 0) {
+          const div = document.createElement("div");
+          div.className = "company-sell";
+          div.innerHTML = `<div class="row">
+            <div>${c.name}</div>
+            <div>$${formatMoney(c.value)}</div>
+            <button class="btn btn-success" onclick="openSellModal(${idx})">Sell</button>
+          </div>`;
+          stocksContainer.appendChild(div);
+        }
       });
-    }
 
-    function sellStock(idx) {
-      const amount = companies[idx].value;
-      if (amount <= 0) return;
-      cash += amount;
-      companies[idx].value = 0;
-      saveData();
-      loadData();
-    }
-
-    // ======= Next Year / Finalize =======
-    function nextYear() {
-      if (year >= 2025) return;
-      year++;
-      savings += savings * interestRate;
-      // apply stock growth
-      companies.forEach(c => c.value += c.value * (c.returnRate || 0));
-      saveData();
-      loadData();
-    }
-
-    function updateNextOrFinalize() {
+      // Next Year / Finalize
       if (year >= 2025) {
         nextOrFinalizeBtn.textContent = "Calculate Total Assets";
         nextOrFinalizeBtn.onclick = () => {
-          const totalAssets = Number((cash + savings + companies.reduce((sum,c)=>sum+c.value,0)).toFixed(2));
+          const stockTotal = companies.reduce((a,b) => a + b.value,0);
+          const totalAssets = Number((cash + savings + stockTotal).toFixed(2));
           localStorage.setItem('finalGrowth', totalAssets);
           window.location.href = 'end.html';
         };
@@ -197,7 +161,64 @@
       }
     }
 
-    // ======= Init =======
+    // Withdraw modal
+    function showModal() { modal.classList.add('show'); }
+    function hideModal() { modal.classList.remove('show'); }
+    withdrawBtn.onclick = () => {
+      withdrawInput.value = 1000.00;
+      withdrawInput.max = savings;
+      showModal();
+    };
+    cancelBtn.onclick = hideModal;
+    cancelBtnX.onclick = hideModal;
+    confirmBtn.onclick = () => {
+      let amt = parseFloat(withdrawInput.value);
+      if (isNaN(amt) || amt < 0.01 || amt > savings) return;
+      savings -= amt; cash += amt;
+      saveData();
+      hideModal();
+      updateUI();
+    };
+
+    // Sell stock modal
+    let currentSellIndex = null;
+    function openSellModal(idx) {
+      currentSellIndex = idx;
+      sellStockName.textContent = "Sell " + companies[idx].name;
+      sellAmountInput.value = companies[idx].value.toFixed(2);
+      sellError.style.display = 'none';
+      sellModal.classList.add('show');
+    }
+    function closeSellModal() { sellModal.classList.remove('show'); }
+    cancelSellBtn.onclick = closeSellModal;
+    cancelSellBtnX.onclick = closeSellModal;
+    confirmSellBtn.onclick = () => {
+      let amt = parseFloat(sellAmountInput.value);
+      if (isNaN(amt) || amt < 0.01 || amt > companies[currentSellIndex].value) {
+        sellError.textContent = "Invalid amount"; sellError.style.display='block'; return;
+      }
+      companies[currentSellIndex].value -= amt;
+      cash += amt;
+      saveData();
+      closeSellModal();
+      updateUI();
+    };
+
+    function nextYear() {
+      if (year >= 2025) return;
+      year++;
+      // Apply savings interest (same as buy page)
+      savings += savings * 0.004;
+
+      // Apply stock growth (hiddenReturn)
+      companies.forEach(c => {
+        c.value += c.value * (c.hiddenReturn || 0.06);
+      });
+
+      saveData();
+      updateUI();
+    }
+
     loadData();
   </script>
 </body>
