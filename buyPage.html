@@ -119,12 +119,16 @@
     let savings = 0;
     let cds = [];
 
-    // Stocks
-    let companies = [
+    // Default companies
+    const defaultCompanies = [
       { name: "Company A", value: 0, returnRate: 0.06 },
       { name: "Company B", value: 0, returnRate: 0.05 },
-      { name: "Company C", value: 0, returnRate: 0.08 }
+      { name: "Company C", value: 0, returnRate: 0.08 },
+      { name: "Company D", value: 0, returnRate: 0.07 },
+      { name: "Company E", value: 0, returnRate: 0.04 }
     ];
+
+    let companies = [];
 
     const cdRates = {
       2020: {1: 0.02, 2: 0.025, 3: 0.03, 5: 0.044},
@@ -150,8 +154,18 @@
       savings = parseFloat(localStorage.getItem("savings")) || 0;
       currentYear = parseInt(localStorage.getItem("year")) || 2020;
       cds = JSON.parse(localStorage.getItem("cds") || "[]");
+
       const savedCompanies = JSON.parse(localStorage.getItem("companies") || "[]");
-      if(savedCompanies.length) companies = savedCompanies.map(c => ({ ...c }));
+      if(savedCompanies.length) {
+        // Merge saved companies with defaults (add any new default ones)
+        companies = [...savedCompanies];
+        defaultCompanies.forEach(dc => {
+          if (!companies.find(c => c.name === dc.name)) companies.push(dc);
+        });
+      } else {
+        companies = [...defaultCompanies];
+      }
+
       normalizeState();
     }
 
@@ -195,6 +209,7 @@
       const stocksListDiv = document.getElementById("stocksList");
       stocksListDiv.innerHTML = "";
       companies.forEach((c, idx) => {
+        if (c.value <= 0) return; // Hide stocks with 0 value to save space
         const btn = document.createElement("button");
         btn.className = "company-btn";
         btn.textContent = `${c.name} - $${formatMoney(c.value)}`;
