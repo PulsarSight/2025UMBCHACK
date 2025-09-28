@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FinanceSim – Investment Hub</title>
   <link rel="stylesheet" href="homestyle.css" />
+  <link rel="stylesheet" href="aicss.css" />
 </head>
 <body>
   <nav class="nav">
@@ -56,7 +57,20 @@
     </div>
   </div>
 
-  <!-- Game logic -->
+  <!-- Chat widget -->
+  <button id="chat-toggle" title="Chat with AI">💬</button>
+  <div id="chat-popup" aria-live="polite" style="display:none">
+    <div id="chat-header">
+      <span>FinanceSim – AI Help</span>
+      <button id="chat-close" aria-label="Close chat">×</button>
+    </div>
+    <div id="chat-box"></div>
+    <div id="chat-input-row">
+      <input id="user-input" type="text" placeholder="Ask about inflation, APY, dividends…" />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
   <script>
     // ======= State & persistence =======
     const interestRate = 0.004; // 0.4% per year
@@ -112,6 +126,7 @@
     function nextYear() {
       if (currentYear >= 2025) return;
       currentYear++;
+      // apply interest to savings
       savings += savings * interestRate;
       saveData();
       updateUI();
@@ -120,22 +135,7 @@
     // init
     loadData(); updateUI();
   </script>
-  <link rel="stylesheet" href="aicss.css" />
-  <button id="chat-toggle" title="Chat with AI">💬</button>
-
-  <div id="chat-popup" aria-live="polite">
-    <div id="chat-header">
-      <span>FinanceSim – AI Help</span>
-      <button id="chat-close" aria-label="Close chat">×</button>
-    </div>
-    <div id="chat-box"></div>
-    <div id="chat-input-row">
-      <input id="user-input" type="text" placeholder="Ask about inflation, APY, dividends…" />
-      <button id="send-btn">Send</button>
-    </div>
-  </div>
 
   <script src="aiJavascript.js" defer></script>
-
 </body>
 </html>

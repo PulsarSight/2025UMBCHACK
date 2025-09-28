@@ -1,14 +1,31 @@
-// aiJavascript.js (popup chat, finance-safe system prompt, OpenAI backend)
+// aiJavascript.js (robust popup control + chat flow)
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
+  const popup     = document.getElementById("chat-popup");
   const toggleBtn = document.getElementById("chat-toggle");
-  const popup = document.getElementById("chat-popup");
-  const closeBtn = document.getElementById("chat-close");
-  const sendBtn = document.getElementById("send-btn");
+  const closeBtn  = document.getElementById("chat-close");
+  const sendBtn   = document.getElementById("send-btn");
   const userInput = document.getElementById("user-input");
-  const chatBox = document.getElementById("chat-box");
+  const chatBox   = document.getElementById("chat-box");
 
-  // Helpers
+  // --- Guard ---
+  if (!popup) return;
+
+  // --- Popup controls (force closed by default) ---
+  function openPopup()  { popup.classList.add("open");  popup.style.display = "flex"; }
+  function closePopup() { popup.classList.remove("open"); popup.style.display = "none"; }
+
+  // Ensure closed on load even if CSS didn’t apply yet
+  closePopup();
+
+  toggleBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (popup.classList.contains("open")) closePopup(); else openPopup();
+  });
+  closeBtn?.addEventListener("click", (e) => { e.preventDefault(); closePopup(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopup(); });
+
+  // --- Chat helpers ---
   function addMessage(role, text){
     const wrap = document.createElement("div");
     wrap.className = `chat-msg ${role}`;
@@ -26,17 +43,15 @@ document.addEventListener("DOMContentLoaded", () => {
       chatBox.lastChild.dataset.loading = "1";
     }else{
       sendBtn.disabled = false;
-      const last = chatBox.lastChild;
-      if(last && last.dataset && last.dataset.loading) chatBox.removeChild(last);
+      // remove last loading bubble if present
+      const kids = chatBox.children;
+      for (let i = kids.length - 1; i >= 0; i--) {
+        if (kids[i].dataset && kids[i].dataset.loading) { chatBox.removeChild(kids[i]); break; }
+      }
     }
   }
 
-  // Toggle popup
-  if (toggleBtn) toggleBtn.addEventListener("click", () => popup.classList.toggle("open"));
-  if (closeBtn)  closeBtn.addEventListener("click", () => popup.classList.remove("open"));
-  document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") popup.classList.remove("open"); });
-
-  // Send
+  // --- Send flow ---
   async function sendMessage(){
     const text = (userInput.value || "").trim();
     if(!text) return;
@@ -71,6 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-  if (userInput) userInput.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
+  sendBtn?.addEventListener("click", sendMessage);
+  userInput?.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
 });
