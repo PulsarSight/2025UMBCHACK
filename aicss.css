@@ -56,3 +56,6 @@
     border-radius: 5px;
     cursor: pointer;
 }
+/* Hide the close (X) button and center the header title */
+#chat-close { display: none !important; }
+#chat-header { justify-content: center !important; }
